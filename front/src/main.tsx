@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@heroui/react/styles'
 import { App } from './app/App'
 import './shared/styles/global.css'
 

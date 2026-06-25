@@ -50,9 +50,21 @@ class IvSpread(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class PokemonImageAssets(BaseModel):
+    primary_artwork_url: str | None = Field(default=None, alias="primaryArtworkUrl")
+    fallback_artwork_url: str | None = Field(default=None, alias="fallbackArtworkUrl")
+    sprite_url: str | None = Field(default=None, alias="spriteUrl")
+    source_name: str = Field(default="pokemon-official+pokedex-pokeapi", alias="sourceName")
+    hotlink_policy: str = Field(default="unknown", alias="hotlinkPolicy")
+
+    model_config = {"populate_by_name": True}
+
+
 class PokemonBuild(BaseModel):
     pokemon_id: str = Field(alias="pokemonId")
     pokemon_name: str = Field(alias="pokemonName")
+    national_dex_number: int | None = Field(default=None, alias="nationalDexNumber")
+    image_assets: PokemonImageAssets | None = Field(default=None, alias="imageAssets")
     base_stats_snapshot: BaseStats = Field(alias="baseStatsSnapshot")
     level: int = Field(default=50, ge=1, le=100)
     nature: str = "Neutral"

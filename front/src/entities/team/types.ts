@@ -9,10 +9,20 @@ export type BaseStats = {
 
 export type StatSpread = Partial<BaseStats>
 
+export type PokemonImageAssets = {
+  primaryArtworkUrl?: string | null
+  fallbackArtworkUrl?: string | null
+  spriteUrl?: string | null
+  sourceName?: string
+  hotlinkPolicy?: string
+}
+
 export type TeamMember = {
   slot: number
   pokemonId: string
   pokemonName: string
+  nationalDexNumber?: number | null
+  imageAssets?: PokemonImageAssets | null
   baseStatsSnapshot: BaseStats
   level: number
   nature: string

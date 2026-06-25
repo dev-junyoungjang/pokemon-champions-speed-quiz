@@ -2,11 +2,23 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from app.models.domain import BaseStats, IvSpread, MetaSample, StatSpread, TeamMember, UserTeam
+from app.models.domain import BaseStats, IvSpread, MetaSample, PokemonImageAssets, StatSpread, TeamMember, UserTeam
 
 
 def _stats(hp: int, atk: int, defense: int, spa: int, spd: int, spe: int) -> BaseStats:
     return BaseStats.model_validate({"hp": hp, "atk": atk, "def": defense, "spa": spa, "spd": spd, "spe": spe})
+
+
+def _image_assets(national_dex_number: int) -> PokemonImageAssets:
+    padded = f"{national_dex_number:03d}"
+    return PokemonImageAssets(
+        primaryArtworkUrl=f"https://assets.pokemon.com/assets/cms2/img/pokedex/full/{padded}.png",
+        fallbackArtworkUrl=(
+            "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/"
+            f"other/official-artwork/{national_dex_number}.png"
+        ),
+        spriteUrl=f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{national_dex_number}.png",
+    )
 
 
 DEFAULT_TEAM = UserTeam(
@@ -16,6 +28,8 @@ DEFAULT_TEAM = UserTeam(
             slot=1,
             pokemonId="garchomp",
             pokemonName="Garchomp",
+            nationalDexNumber=445,
+            imageAssets=_image_assets(445),
             baseStatsSnapshot=_stats(108, 130, 95, 80, 85, 102),
             nature="Jolly",
             ability="Rough Skin",
@@ -27,6 +41,8 @@ DEFAULT_TEAM = UserTeam(
             slot=2,
             pokemonId="dragonite",
             pokemonName="Dragonite",
+            nationalDexNumber=149,
+            imageAssets=_image_assets(149),
             baseStatsSnapshot=_stats(91, 134, 95, 100, 100, 80),
             nature="Jolly",
             ability="Multiscale",
@@ -41,6 +57,8 @@ DEFAULT_META = [
     MetaSample(
         pokemonId="flutter-mane",
         pokemonName="Flutter Mane",
+        nationalDexNumber=987,
+        imageAssets=_image_assets(987),
         baseStatsSnapshot=_stats(55, 55, 55, 135, 135, 135),
         nature="Timid",
         ability="Protosynthesis",
@@ -52,6 +70,8 @@ DEFAULT_META = [
     MetaSample(
         pokemonId="chien-pao",
         pokemonName="Chien-Pao",
+        nationalDexNumber=1002,
+        imageAssets=_image_assets(1002),
         baseStatsSnapshot=_stats(80, 120, 80, 90, 65, 135),
         nature="Jolly",
         ability="Sword of Ruin",
@@ -62,6 +82,8 @@ DEFAULT_META = [
     MetaSample(
         pokemonId="landorus-therian",
         pokemonName="Landorus-Therian",
+        nationalDexNumber=645,
+        imageAssets=_image_assets(645),
         baseStatsSnapshot=_stats(89, 145, 90, 105, 80, 91),
         nature="Jolly",
         ability="Intimidate",
@@ -72,6 +94,8 @@ DEFAULT_META = [
     MetaSample(
         pokemonId="palafin-hero",
         pokemonName="Palafin-Hero",
+        nationalDexNumber=964,
+        imageAssets=_image_assets(964),
         baseStatsSnapshot=_stats(100, 160, 97, 106, 87, 100),
         nature="Jolly",
         ability="Zero to Hero",
