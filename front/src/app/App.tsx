@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
-import { Button, Chip, Spinner } from '@heroui/react'
+import { Button, Chip, Slider, Spinner } from '@heroui/react'
 import styled from '@emotion/styled'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
@@ -535,7 +535,7 @@ const CreateScroll = styled.div`
 
 const FormHero = styled.div`
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr) 56px;
+  grid-template-columns: 74px minmax(0, 1fr);
   gap: 9px;
   align-items: end;
   margin-bottom: 6px;
@@ -668,9 +668,23 @@ const RangeWrap = styled.div`
   align-items: center;
   gap: 6px;
 
-  input {
-    width: 100%;
-    accent-color: #f97316;
+  [data-slot='slider'] {
+    flex: 1;
+    min-width: 0;
+  }
+
+  [data-slot='slider-track'] {
+    height: 6px;
+    border-radius: 999px;
+  }
+
+  [data-slot='slider-fill'] {
+    background: #f97316;
+  }
+
+  [data-slot='slider-thumb'] {
+    width: 14px;
+    height: 14px;
   }
 `
 
@@ -1030,12 +1044,6 @@ function CreatePokemonScreen({
               <TextField value={member.pokemonName} placeholder="예: Garchomp" onChange={(event) => onUpdate({ pokemonName: event.target.value, pokemonId: event.target.value.toLowerCase().replace(/\s+/g, '-') })} />
             </FieldLabel>
           </FieldGroup>
-          <FieldGroup>
-            <FieldLabel>
-              Lv
-              <TextField type="number" value={member.level} onChange={(event) => onUpdate({ level: Number(event.target.value) })} />
-            </FieldLabel>
-          </FieldGroup>
         </FormHero>
 
         <TypeChipRow>
@@ -1095,7 +1103,19 @@ function CreatePokemonScreen({
               <StatValue>{base}</StatValue>
               <RangeWrap>
                 <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.max(0, ev - 4))}>−</TinyRoundButton>
-                <input type="range" min="0" max="252" step="4" value={ev} onChange={(event) => updateEv(stat, Number(event.target.value))} />
+                <Slider
+                  aria-label={`${label} EV`}
+                  minValue={0}
+                  maxValue={252}
+                  step={4}
+                  value={ev}
+                  onChange={(value) => updateEv(stat, Array.isArray(value) ? value[0] : value)}
+                >
+                  <Slider.Track>
+                    <Slider.Fill />
+                    <Slider.Thumb />
+                  </Slider.Track>
+                </Slider>
                 <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.min(252, ev + 4))}>+</TinyRoundButton>
               </RangeWrap>
               <span>+{natureBonus}</span>
