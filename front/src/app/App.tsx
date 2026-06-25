@@ -10,7 +10,7 @@ import type { TeamMember, UserTeam } from '../entities/team/types'
 
 const queryClient = new QueryClient()
 
-type ScreenName = 'entry' | 'difficulty' | 'quiz'
+type ScreenName = 'entry' | 'difficulty' | 'quiz' | 'create'
 
 const Screen = styled.main`
   min-height: 100vh;
@@ -161,8 +161,13 @@ const EntryGrid = styled.div`
   }
 `
 
-const EntryCard = styled.article`
+const EntryCard = styled.button`
+  width: 100%;
   min-height: 148px;
+  border: 0;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
   padding: 9px 9px 8px;
   border-radius: 17px;
   background: #ffffff;
@@ -517,6 +522,172 @@ const LoadingLayer = styled.div`
   font-weight: 800;
 `
 
+const CreateScroll = styled.div`
+  height: calc(100% - 112px);
+  overflow-y: auto;
+  padding: 2px 2px 82px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`
+
+const FormHero = styled.div`
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) 56px;
+  gap: 9px;
+  align-items: end;
+  margin-bottom: 6px;
+`
+
+const PreviewTile = styled.div`
+  display: grid;
+  height: 68px;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+`
+
+const FieldGroup = styled.div`
+  display: grid;
+  gap: 5px;
+`
+
+const FieldLabel = styled.label`
+  display: grid;
+  gap: 5px;
+  color: #222834;
+  font-size: 10px;
+  font-weight: 900;
+`
+
+const TextField = styled.input`
+  width: 100%;
+  height: 34px;
+  min-width: 0;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0 11px;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 800;
+  outline: none;
+
+  &:focus {
+    border-color: #0b7bf3;
+    box-shadow: 0 0 0 3px rgba(11, 123, 243, 0.10);
+  }
+`
+
+const SelectLike = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 34px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0 11px;
+  color: #7b8089;
+  font-size: 11px;
+  font-weight: 800;
+`
+
+const TwoColumnFields = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 8px;
+`
+
+const FullField = styled.div`
+  margin-bottom: 8px;
+`
+
+const TypeChipRow = styled.div`
+  display: flex;
+  gap: 6px;
+  margin: 3px 0 10px 78px;
+`
+
+const SmallTypeChip = styled.span<{ color: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #5f6875;
+  font-size: 9px;
+  font-weight: 900;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${({ color }) => color};
+  }
+`
+
+const StatHeader = styled.div`
+  display: grid;
+  grid-template-columns: 38px 34px minmax(0, 1fr) 30px 34px;
+  gap: 7px;
+  align-items: center;
+  margin: 12px 0 7px;
+  color: #6b7280;
+  font-size: 9px;
+  font-weight: 1000;
+`
+
+const StatRow = styled.div`
+  display: grid;
+  grid-template-columns: 38px 34px minmax(0, 1fr) 30px 34px;
+  gap: 7px;
+  align-items: center;
+  min-height: 31px;
+  color: #111827;
+  font-size: 10px;
+  font-weight: 900;
+`
+
+const StatValue = styled.span`
+  color: #5d6673;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 900;
+`
+
+const RangeWrap = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  input {
+    width: 100%;
+    accent-color: #f97316;
+  }
+`
+
+const TinyRoundButton = styled.button`
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #eef0f3;
+  color: #8d95a1;
+  font-size: 11px;
+  font-weight: 900;
+`
+
 const typeColors = ['#79d19d', '#a78bfa', '#f59e0b', '#ef4444', '#60a5fa', '#f472b6']
 const difficultyTones = ['#c8ffe3', '#dbeafe', '#ffe4a8', '#ffd1e1', '#ede9fe']
 
@@ -585,7 +756,7 @@ function KoreanName({ member }: { member: TeamMember }) {
   return <>{member.pokemonName || '포켓몬 추가'}</>
 }
 
-function EntryScreen({ teamDraft, onStart }: { teamDraft: UserTeam; onStart: () => void }) {
+function EntryScreen({ teamDraft, onStart, onOpenCreate }: { teamDraft: UserTeam; onStart: () => void; onOpenCreate: (slot: number) => void }) {
   return (
     <>
       <Header>
@@ -606,7 +777,7 @@ function EntryScreen({ teamDraft, onStart }: { teamDraft: UserTeam; onStart: () 
         {teamDraft.members.map((member, index) => {
           const hasPokemon = Boolean(member.pokemonName)
           return (
-            <EntryCard key={member.slot}>
+            <EntryCard key={member.slot} type="button" onClick={() => onOpenCreate(member.slot)}>
               {hasPokemon ? (
                 <>
                   <ArtPanel>
@@ -802,8 +973,147 @@ function QuizScreen({
   )
 }
 
+
+const statLabels: Array<[keyof TeamMember['baseStatsSnapshot'], string]> = [
+  ['hp', 'HP'],
+  ['atk', '공격'],
+  ['def', '방어'],
+  ['spa', '특공'],
+  ['spd', '특방'],
+  ['spe', '스피드'],
+]
+
+function CreatePokemonScreen({
+  member,
+  onBack,
+  onUpdate,
+}: {
+  member: TeamMember
+  onBack: () => void
+  onUpdate: (patch: Partial<TeamMember>) => void
+}) {
+  function updateEv(stat: keyof TeamMember['evs'], value: number) {
+    onUpdate({ evs: { ...member.evs, [stat]: value } })
+  }
+
+  function updateDex(value: number) {
+    onUpdate({
+      nationalDexNumber: value,
+      imageAssets: value > 0 ? imageAssetsFromDex(value) : null,
+    })
+  }
+
+  const previewMember = member.pokemonName ? member : { ...member, pokemonName: 'Garchomp', nationalDexNumber: 445, imageAssets: imageAssetsFromDex(445) }
+
+  return (
+    <>
+      <Header>
+        <HeaderCopy>
+          <PageTitle>포켓몬 만들기</PageTitle>
+          <PageSubtitle>엔트리에 저장할 실전 샘플</PageSubtitle>
+        </HeaderCopy>
+        <IconButton onClick={onBack}>×</IconButton>
+      </Header>
+
+      <CreateScroll>
+        <FormHero>
+          <PreviewTile>
+            {artworkUrl(previewMember) ? (
+              <PokemonArtwork src={artworkUrl(previewMember) ?? undefined} alt={previewMember.pokemonName} onError={(event) => handleImageError(event, previewMember)} />
+            ) : (
+              <PlusButton>+</PlusButton>
+            )}
+          </PreviewTile>
+          <FieldGroup>
+            <FieldLabel>
+              포켓몬
+              <TextField value={member.pokemonName} placeholder="예: Garchomp" onChange={(event) => onUpdate({ pokemonName: event.target.value, pokemonId: event.target.value.toLowerCase().replace(/\s+/g, '-') })} />
+            </FieldLabel>
+          </FieldGroup>
+          <FieldGroup>
+            <FieldLabel>
+              Lv
+              <TextField type="number" value={member.level} onChange={(event) => onUpdate({ level: Number(event.target.value) })} />
+            </FieldLabel>
+          </FieldGroup>
+        </FormHero>
+
+        <TypeChipRow>
+          <SmallTypeChip color="#79d19d">드래곤</SmallTypeChip>
+          <SmallTypeChip color="#a78bfa">땅</SmallTypeChip>
+        </TypeChipRow>
+
+        <TwoColumnFields>
+          {[1, 2, 3, 4].map((index) => (
+            <FieldLabel key={index}>
+              기술 {index}
+              <SelectLike type="button">기술 선택 <span>⌄</span></SelectLike>
+            </FieldLabel>
+          ))}
+        </TwoColumnFields>
+
+        <FullField>
+          <FieldLabel>
+            특성
+            <SelectLike type="button">특성 선택 <span>⌄</span></SelectLike>
+          </FieldLabel>
+        </FullField>
+
+        <FullField>
+          <FieldLabel>
+            지닌 물건
+            <SelectLike type="button">지닌 물건 선택 <span>⌄</span></SelectLike>
+          </FieldLabel>
+        </FullField>
+
+        <TwoColumnFields>
+          <FieldLabel>
+            성격
+            <TextField value={member.nature} placeholder="Jolly" onChange={(event) => onUpdate({ nature: event.target.value })} />
+          </FieldLabel>
+          <FieldLabel>
+            National Dex
+            <TextField type="number" value={member.nationalDexNumber ?? ''} placeholder="445" onChange={(event) => updateDex(Number(event.target.value))} />
+          </FieldLabel>
+        </TwoColumnFields>
+
+        <StatHeader>
+          <span>스탯</span>
+          <span>기본</span>
+          <span>노력치(EV)</span>
+          <span>성격</span>
+          <span>합계</span>
+        </StatHeader>
+        {statLabels.map(([stat, label]) => {
+          const base = member.baseStatsSnapshot[stat]
+          const ev = member.evs[stat] ?? 0
+          const natureBonus = stat === 'spe' ? 10 : 0
+          const total = base + Math.floor(ev / 8) + natureBonus
+          return (
+            <StatRow key={stat}>
+              <span>{label}</span>
+              <StatValue>{base}</StatValue>
+              <RangeWrap>
+                <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.max(0, ev - 4))}>−</TinyRoundButton>
+                <input type="range" min="0" max="252" step="4" value={ev} onChange={(event) => updateEv(stat, Number(event.target.value))} />
+                <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.min(252, ev + 4))}>+</TinyRoundButton>
+              </RangeWrap>
+              <span>+{natureBonus}</span>
+              <strong>{total}</strong>
+            </StatRow>
+          )
+        })}
+      </CreateScroll>
+
+      <BottomAction>
+        <Button variant="primary" onPress={onBack}>엔트리에 저장</Button>
+      </BottomAction>
+    </>
+  )
+}
+
 function AppContent() {
-  const [screen, setScreen] = useState<ScreenName>('entry')
+  const [screen, setScreen] = useState<ScreenName>(() => (globalThis.location?.hash === '#create' ? 'create' : 'entry'))
   const [teamDraft, setTeamDraft] = useState<UserTeam>({
     teamName: 'main',
     format: 'pokemon_champions',
@@ -813,6 +1123,7 @@ function AppContent() {
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [questionIndex, setQuestionIndex] = useState(0)
   const [lastResult, setLastResult] = useState<AnswerResult | null>(null)
+  const [activeSlot, setActiveSlot] = useState(1)
 
   const teamQuery = useQuery({ queryKey: ['team'], queryFn: api.getTeam })
   const difficultiesQuery = useQuery({ queryKey: ['difficulties'], queryFn: api.getDifficulties })
@@ -837,6 +1148,19 @@ function AppContent() {
   }, [teamQuery.data])
 
   const currentQuestion = questions[questionIndex]
+  const activeMember = teamDraft.members.find((member) => member.slot === activeSlot) ?? teamDraft.members[0]
+
+  function updateMember(slot: number, patch: Partial<TeamMember>) {
+    setTeamDraft((team) => ({
+      ...team,
+      members: team.members.map((member) => (member.slot === slot ? { ...member, ...patch } : member)),
+    }))
+  }
+
+  function openCreate(slot: number) {
+    setActiveSlot(slot)
+    setScreen('create')
+  }
 
   function startQuiz(difficulty = selectedDifficulty ?? 'easy') {
     setSelectedDifficulty(difficulty)
@@ -859,7 +1183,14 @@ function AppContent() {
             <Signal><span /><span /><span /><span /></Signal>
           </StatusBar>
 
-          {screen === 'entry' && <EntryScreen teamDraft={teamDraft} onStart={() => setScreen('difficulty')} />}
+          {screen === 'entry' && <EntryScreen teamDraft={teamDraft} onStart={() => setScreen('difficulty')} onOpenCreate={openCreate} />}
+          {screen === 'create' && activeMember && (
+            <CreatePokemonScreen
+              member={activeMember}
+              onBack={() => setScreen('entry')}
+              onUpdate={(patch) => updateMember(activeSlot, patch)}
+            />
+          )}
           {screen === 'difficulty' && (
             <DifficultyScreen
               options={difficultiesQuery.data}
