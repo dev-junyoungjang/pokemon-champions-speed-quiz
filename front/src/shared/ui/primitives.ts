@@ -8,7 +8,7 @@ export const PageShell = styled.main`
     ${theme.color.page};
   color: ${theme.color.ink};
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    'Noto Sans KR', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 `
 
 export const ContentFrame = styled.div`
