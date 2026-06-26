@@ -679,7 +679,7 @@ const RangeWrap = styled.div`
   }
 
   [data-slot='slider-fill'] {
-    background: #f97316;
+    background: #0b7bf3;
   }
 
   [data-slot='slider-thumb'] {
