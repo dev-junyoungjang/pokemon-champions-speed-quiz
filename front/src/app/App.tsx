@@ -720,6 +720,47 @@ const defaultMember = (slot: number): TeamMember => ({
   ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
 })
 
+function mockMember(slot: number, name: string, dex: number, baseSpeed: number): TeamMember {
+  return {
+    slot,
+    pokemonId: name.toLowerCase().replace(/\s+/g, '-'),
+    pokemonName: name,
+    nationalDexNumber: dex,
+    imageAssets: imageAssetsFromDex(dex),
+    baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: baseSpeed },
+    level: 50,
+    nature: 'Jolly',
+    ability: null,
+    item: null,
+    evs: { spe: 252 },
+    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+  }
+}
+
+function makeMockQuestion(subject: TeamMember): QuizQuestion {
+  const opponent = mockMember(99, 'Iron Hands', 992, 50)
+  const subjectSpeed = subject.baseStatsSnapshot.spe || 102
+  const opponentSpeed = opponent.baseStatsSnapshot.spe
+  return {
+    id: 'mock-speed-preview',
+    difficulty: 'easy',
+    mode: 'IS_FASTER',
+    statement: `${subject.pokemonName || 'Garchomp'}의 기본 Speed는 ${opponent.pokemonName}보다 높다.`,
+    answerType: 'YES_NO',
+    correctAnswer: subjectSpeed > opponentSpeed,
+    subject: {
+      build: subject.pokemonName ? subject : mockMember(1, 'Garchomp', 445, 102),
+      speed: { rawSpeed: subjectSpeed, effectiveSpeed: subjectSpeed, modifiers: [`base speed=${subjectSpeed}`] },
+    },
+    opponent: {
+      build: opponent,
+      speed: { rawSpeed: opponentSpeed, effectiveSpeed: opponentSpeed, modifiers: [`base speed=${opponentSpeed}`] },
+    },
+    explanation: `${subject.pokemonName || 'Garchomp'}: ${subjectSpeed}, ${opponent.pokemonName}: ${opponentSpeed}. 따라서 문장은 ${subjectSpeed > opponentSpeed ? '맞습니다' : '틀립니다'}.`,
+    rulesetVersion: 'mock-preview',
+  }
+}
+
 function imageAssetsFromDex(nationalDexNumber: number) {
   const padded = String(nationalDexNumber).padStart(3, '0')
   return {
@@ -913,7 +954,7 @@ function QuizScreen({
       </QuizTop>
 
       <QuizPrompt>
-        <QuizTitle>내 포켓몬이 무쇠손보다 빠를까?</QuizTitle>
+        <QuizTitle>{currentQuestion?.statement ?? '내 포켓몬이 메타 샘플보다 빠를까?'}</QuizTitle>
         <QuizHint>속도 수치는 숨기기 있어요 · 왼/오른 판단</QuizHint>
       </QuizPrompt>
 
@@ -1133,7 +1174,11 @@ function CreatePokemonScreen({
 }
 
 function AppContent() {
-  const [screen, setScreen] = useState<ScreenName>(() => (globalThis.location?.hash === '#create' ? 'create' : 'entry'))
+  const [screen, setScreen] = useState<ScreenName>(() => {
+    if (globalThis.location?.hash === '#create') return 'create'
+    if (globalThis.location?.hash === '#quiz') return 'quiz'
+    return 'entry'
+  })
   const [teamDraft, setTeamDraft] = useState<UserTeam>({
     teamName: 'main',
     format: 'pokemon_champions',
@@ -1167,8 +1212,9 @@ function AppContent() {
     }
   }, [teamQuery.data])
 
-  const currentQuestion = questions[questionIndex]
   const activeMember = teamDraft.members.find((member) => member.slot === activeSlot) ?? teamDraft.members[0]
+  const previewQuestion = makeMockQuestion(teamDraft.members[0] ?? defaultMember(1))
+  const currentQuestion = questions[questionIndex] ?? (screen === 'quiz' ? previewQuestion : undefined)
 
   function updateMember(slot: number, patch: Partial<TeamMember>) {
     setTeamDraft((team) => ({
@@ -1189,6 +1235,18 @@ function AppContent() {
 
   async function answer(answerValue: boolean) {
     if (!currentQuestion || answerQuestion.isPending) return
+
+    if (currentQuestion.id.startsWith('mock-')) {
+      setLastResult({
+        correct: answerValue === currentQuestion.correctAnswer,
+        correctAnswer: currentQuestion.correctAnswer,
+        explanation: currentQuestion.explanation,
+        subjectSpeed: currentQuestion.subject.speed.effectiveSpeed,
+        opponentSpeed: currentQuestion.opponent.speed.effectiveSpeed,
+      })
+      return
+    }
+
     const result = await answerQuestion.mutateAsync({ id: currentQuestion.id, answer: answerValue })
     setLastResult(result)
     setQuestionIndex((index) => index + 1)
