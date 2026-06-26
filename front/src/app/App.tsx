@@ -5,12 +5,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { api } from '../shared/api/client'
-import type { AnswerResult, Difficulty, DifficultyOption, QuizQuestion } from '../entities/quiz/types'
+import type { Difficulty, DifficultyOption, QuizQuestion } from '../entities/quiz/types'
 import type { TeamMember, UserTeam } from '../entities/team/types'
 
 const queryClient = new QueryClient()
 
-type ScreenName = 'entry' | 'difficulty' | 'quiz' | 'create'
+type ScreenName = 'entry' | 'difficulty' | 'quiz' | 'create' | 'complete' | 'review'
 
 const Screen = styled.main`
   min-height: 100vh;
@@ -498,21 +498,6 @@ const SwipeActions = styled.div`
   }
 `
 
-const ResultToast = styled.div<{ correct: boolean }>`
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 78px;
-  padding: 12px;
-  border-radius: 16px;
-  background: ${({ correct }) => (correct ? '#ecfdf3' : '#fff1f3')};
-  color: ${({ correct }) => (correct ? '#027a48' : '#b42318')};
-  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.45;
-`
-
 const LoadingLayer = styled.div`
   display: grid;
   min-height: 420px;
@@ -520,6 +505,258 @@ const LoadingLayer = styled.div`
   color: #7b8089;
   font-size: 13px;
   font-weight: 800;
+`
+
+const ConfettiLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+`
+
+const ConfettiPiece = styled.span<{ left: number; delay: number; color: string }>`
+  position: absolute;
+  top: -24px;
+  left: ${({ left }) => left}%;
+  width: 7px;
+  height: 13px;
+  border-radius: 3px;
+  background: ${({ color }) => color};
+  opacity: 0.9;
+  animation: confFall 2.8s linear infinite;
+  animation-delay: ${({ delay }) => delay}s;
+
+  @keyframes confFall {
+    0% { transform: translateY(-28px) rotate(0deg); }
+    100% { transform: translateY(900px) rotate(420deg); }
+  }
+`
+
+const CompleteWrap = styled.div`
+  position: relative;
+  display: grid;
+  height: calc(100% - 34px);
+  grid-template-rows: 1fr auto;
+  text-align: center;
+`
+
+const CompleteCenter = styled.div`
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 14px;
+`
+
+const MascotStage = styled.div`
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin-bottom: 4px;
+`
+
+const Mascot = styled.img`
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  image-rendering: auto;
+  filter: drop-shadow(0 18px 18px rgba(15, 23, 42, 0.18));
+  animation: bob 1.15s ease-in-out infinite;
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+`
+
+const MascotShadow = styled.div`
+  width: 82px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.13);
+  filter: blur(1px);
+  animation: shadowPulse 1.15s ease-in-out infinite;
+
+  @keyframes shadowPulse {
+    0%, 100% { transform: scaleX(1); opacity: 0.18; }
+    50% { transform: scaleX(0.74); opacity: 0.09; }
+  }
+`
+
+const CompleteTitle = styled.h1`
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.05;
+  letter-spacing: -0.07em;
+`
+
+const CompleteSubtitle = styled.p`
+  margin: 0;
+  color: #71717a;
+  font-size: 13px;
+  font-weight: 800;
+`
+
+const BigScore = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: #111827;
+  font-weight: 1000;
+
+  strong {
+    font-size: 56px;
+    line-height: 1;
+    letter-spacing: -0.08em;
+  }
+
+  span {
+    color: #a1a1aa;
+    font-size: 24px;
+  }
+`
+
+const SummaryGrid = styled.div`
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 5px;
+`
+
+const SummaryCard = styled.div`
+  padding: 11px 7px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.055);
+
+  span {
+    display: block;
+    color: #8a929d;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  strong {
+    display: block;
+    margin-top: 4px;
+    color: #111827;
+    font-size: 18px;
+    line-height: 1;
+  }
+`
+
+const ReviewScroll = styled.div`
+  height: calc(100% - 122px);
+  overflow-y: auto;
+  padding: 2px 2px 84px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+`
+
+const ReviewHeader = styled(Header)`
+  margin-bottom: 14px;
+`
+
+const ReviewCard = styled.article`
+  display: grid;
+  gap: 10px;
+  margin-bottom: 11px;
+  padding: 13px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.055);
+`
+
+const ReviewCardTop = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #71717a;
+  font-size: 11px;
+  font-weight: 1000;
+`
+
+const ResultBadge = styled.span<{ correct: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: ${({ correct }) => (correct ? '#e8faf0' : '#fff0f5')};
+  color: ${({ correct }) => (correct ? '#17c964' : '#f31260')};
+  font-size: 10px;
+  font-weight: 1000;
+`
+
+const ReviewQuestion = styled.p`
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: -0.04em;
+`
+
+const MiniMatchup = styled.div`
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+`
+
+const MiniPokemon = styled.div`
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+
+  img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+  }
+
+  strong {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+`
+
+const AnswerCompare = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+`
+
+const AnswerBox = styled.div`
+  padding: 9px;
+  border-radius: 13px;
+  background: #f7f8fa;
+  color: #71717a;
+  font-size: 10px;
+  font-weight: 900;
+
+  strong {
+    display: block;
+    margin-top: 4px;
+    color: #111827;
+    font-size: 13px;
+  }
+`
+
+const ExplanationBox = styled.div`
+  padding: 10px;
+  border-radius: 14px;
+  background: #fff8e8;
+  color: #8a5b00;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.45;
 `
 
 const CreateScroll = styled.div`
@@ -704,6 +941,19 @@ const TinyRoundButton = styled.button`
 
 const typeColors = ['#79d19d', '#a78bfa', '#f59e0b', '#ef4444', '#60a5fa', '#f472b6']
 const difficultyTones = ['#c8ffe3', '#dbeafe', '#ffe4a8', '#ffd1e1', '#ede9fe']
+const confettiColors = ['#006FEE', '#17C964', '#F31260', '#F5A524', '#A33EA1', '#63BC5A']
+
+type QuizDraftAnswer = {
+  question: QuizQuestion
+  answer: boolean
+}
+
+type QuizSummary = {
+  total: number
+  correct: number
+  wrong: number
+  accuracy: number
+}
 
 const defaultMember = (slot: number): TeamMember => ({
   slot,
@@ -737,28 +987,36 @@ function mockMember(slot: number, name: string, dex: number, baseSpeed: number):
   }
 }
 
-function makeMockQuestion(subject: TeamMember): QuizQuestion {
-  const opponent = mockMember(99, 'Iron Hands', 992, 50)
-  const subjectSpeed = subject.baseStatsSnapshot.spe || 102
-  const opponentSpeed = opponent.baseStatsSnapshot.spe
-  return {
-    id: 'mock-speed-preview',
-    difficulty: 'easy',
-    mode: 'IS_FASTER',
-    statement: `${subject.pokemonName || 'Garchomp'}의 기본 Speed는 ${opponent.pokemonName}보다 높다.`,
-    answerType: 'YES_NO',
-    correctAnswer: subjectSpeed > opponentSpeed,
-    subject: {
-      build: subject.pokemonName ? subject : mockMember(1, 'Garchomp', 445, 102),
-      speed: { rawSpeed: subjectSpeed, effectiveSpeed: subjectSpeed, modifiers: [`base speed=${subjectSpeed}`] },
-    },
-    opponent: {
-      build: opponent,
-      speed: { rawSpeed: opponentSpeed, effectiveSpeed: opponentSpeed, modifiers: [`base speed=${opponentSpeed}`] },
-    },
-    explanation: `${subject.pokemonName || 'Garchomp'}: ${subjectSpeed}, ${opponent.pokemonName}: ${opponentSpeed}. 따라서 문장은 ${subjectSpeed > opponentSpeed ? '맞습니다' : '틀립니다'}.`,
-    rulesetVersion: 'mock-preview',
-  }
+function makeMockQuestions(subject: TeamMember): QuizQuestion[] {
+  const baseSubject = subject.pokemonName ? subject : mockMember(1, 'Garchomp', 445, 102)
+  const opponents = [
+    mockMember(99, 'Iron Hands', 992, 50),
+    mockMember(100, 'Dragapult', 887, 142),
+    mockMember(101, 'Dragonite', 149, 80),
+  ]
+
+  return opponents.map((opponent, index) => {
+    const subjectSpeed = baseSubject.baseStatsSnapshot.spe
+    const opponentSpeed = opponent.baseStatsSnapshot.spe
+    return {
+      id: `mock-speed-preview-${index + 1}`,
+      difficulty: 'easy',
+      mode: 'IS_FASTER',
+      statement: `${baseSubject.pokemonName}의 기본 Speed는 ${opponent.pokemonName}보다 높다.`,
+      answerType: 'YES_NO',
+      correctAnswer: subjectSpeed > opponentSpeed,
+      subject: {
+        build: baseSubject,
+        speed: { rawSpeed: subjectSpeed, effectiveSpeed: subjectSpeed, modifiers: [`base speed=${subjectSpeed}`] },
+      },
+      opponent: {
+        build: opponent,
+        speed: { rawSpeed: opponentSpeed, effectiveSpeed: opponentSpeed, modifiers: [`base speed=${opponentSpeed}`] },
+      },
+      explanation: `${baseSubject.pokemonName}: ${subjectSpeed}, ${opponent.pokemonName}: ${opponentSpeed}. ${subjectSpeed} ${subjectSpeed > opponentSpeed ? '>' : '<='} ${opponentSpeed} 이므로 정답은 ${subjectSpeed > opponentSpeed ? '예' : '아니오'}입니다.`,
+      rulesetVersion: 'mock-preview',
+    } satisfies QuizQuestion
+  })
 }
 
 function imageAssetsFromDex(nationalDexNumber: number) {
@@ -783,6 +1041,33 @@ function handleImageError(event: SyntheticEvent<HTMLImageElement>, member: TeamM
     return
   }
   event.currentTarget.style.display = 'none'
+}
+
+function animatedSpriteUrl(member: TeamMember): string | null {
+  if (!member.nationalDexNumber || member.nationalDexNumber > 649) return artworkUrl(member)
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${member.nationalDexNumber}.gif`
+}
+
+function handleMascotError(event: SyntheticEvent<HTMLImageElement>, member: TeamMember) {
+  const fallback = artworkUrl(member)
+  if (fallback && event.currentTarget.src !== fallback) {
+    event.currentTarget.src = fallback
+  }
+}
+
+function answerLabel(answer: boolean) {
+  return answer ? '예' : '아니오'
+}
+
+function buildQuizSummary(answers: QuizDraftAnswer[]): QuizSummary {
+  const correct = answers.filter((item) => item.answer === item.question.correctAnswer).length
+  const total = answers.length
+  return {
+    total,
+    correct,
+    wrong: total - correct,
+    accuracy: total ? Math.round((correct / total) * 100) : 0,
+  }
 }
 
 function difficultyTitle(option: DifficultyOption): string {
@@ -934,7 +1219,6 @@ function QuizScreen({
   currentQuestion,
   questionIndex,
   total,
-  lastResult,
   isLoading,
   onAnswer,
 }: {
@@ -942,7 +1226,6 @@ function QuizScreen({
   currentQuestion: QuizQuestion | undefined
   questionIndex: number
   total: number
-  lastResult: AnswerResult | null
   isLoading: boolean
   onAnswer: (answer: boolean) => void
 }) {
@@ -1013,17 +1296,100 @@ function QuizScreen({
 
       {!isLoading && total > 0 && !currentQuestion && <LoadingLayer>이번 세트 완료!</LoadingLayer>}
 
-      {lastResult && (
-        <ResultToast correct={lastResult.correct}>
-          {lastResult.correct ? '정답!' : '오답!'} {lastResult.explanation}<br />
-          Speed: {lastResult.subjectSpeed} vs {lastResult.opponentSpeed}
-        </ResultToast>
-      )}
 
       <SwipeActions>
         <button className="no" onClick={() => onAnswer(false)}>← 아니오</button>
         <button className="yes" onClick={() => onAnswer(true)}>예 →</button>
       </SwipeActions>
+    </>
+  )
+}
+
+
+function CompleteScreen({ answers, mascot, onReview, onHome }: { answers: QuizDraftAnswer[]; mascot: TeamMember; onReview: () => void; onHome: () => void }) {
+  const summary = buildQuizSummary(answers)
+  const mascotSrc = animatedSpriteUrl(mascot) ?? artworkUrl(mascot) ?? undefined
+  const mascotName = mascot.pokemonName || '포켓몬'
+
+  return (
+    <CompleteWrap>
+      <ConfettiLayer aria-hidden="true">
+        {Array.from({ length: 26 }, (_, index) => (
+          <ConfettiPiece key={index} left={(index * 17) % 100} delay={-(index % 8) * 0.22} color={confettiColors[index % confettiColors.length]} />
+        ))}
+      </ConfettiLayer>
+      <CompleteCenter>
+        <MascotStage>
+          {mascotSrc && <Mascot src={mascotSrc} alt={mascotName} onError={(event) => handleMascotError(event, mascot)} />}
+          <MascotShadow />
+        </MascotStage>
+        <div>
+          <CompleteTitle>퀴즈 완료!</CompleteTitle>
+          <CompleteSubtitle>{mascotName}와 함께 완주했어요</CompleteSubtitle>
+        </div>
+        <BigScore>
+          <strong>{summary.correct}</strong>
+          <span>/ {summary.total || 0}</span>
+        </BigScore>
+        <SummaryGrid>
+          <SummaryCard><span>정답</span><strong>{summary.correct}</strong></SummaryCard>
+          <SummaryCard><span>오답</span><strong>{summary.wrong}</strong></SummaryCard>
+          <SummaryCard><span>정답률</span><strong>{summary.accuracy}%</strong></SummaryCard>
+        </SummaryGrid>
+      </CompleteCenter>
+      <BottomAction>
+        <Button variant="primary" onPress={summary.total ? onReview : onHome}>{summary.total ? '정답 & 해설 보기' : '홈으로'}</Button>
+      </BottomAction>
+    </CompleteWrap>
+  )
+}
+
+function ReviewScreen({ answers, onHome }: { answers: QuizDraftAnswer[]; onHome: () => void }) {
+  const summary = buildQuizSummary(answers)
+  return (
+    <>
+      <ReviewHeader>
+        <HeaderCopy>
+          <PageTitle>정답 & 해설</PageTitle>
+          <PageSubtitle>실효 속도 계산을 다시 확인해요</PageSubtitle>
+        </HeaderCopy>
+        <Chip color="success" variant="soft">{summary.correct}/{summary.total}</Chip>
+      </ReviewHeader>
+
+      <ReviewScroll>
+        {answers.map((item, index) => {
+          const correct = item.answer === item.question.correctAnswer
+          return (
+            <ReviewCard key={`${item.question.id}-${index}`}>
+              <ReviewCardTop>
+                <span>문제 {String(index + 1).padStart(2, '0')}</span>
+                <ResultBadge correct={correct}>{correct ? '✓ 정답' : '✕ 오답'}</ResultBadge>
+              </ReviewCardTop>
+              <ReviewQuestion>{item.question.statement}</ReviewQuestion>
+              <MiniMatchup>
+                <MiniPokemon>
+                  <img src={artworkUrl(item.question.subject.build) ?? undefined} alt={item.question.subject.build.pokemonName} onError={(event) => handleImageError(event, item.question.subject.build)} />
+                  <strong>{item.question.subject.build.pokemonName}</strong>
+                </MiniPokemon>
+                <VersusBadge style={{ marginTop: 0, width: 28, height: 28, fontSize: 10 }}>VS</VersusBadge>
+                <MiniPokemon>
+                  <img src={artworkUrl(item.question.opponent.build) ?? undefined} alt={item.question.opponent.build.pokemonName} onError={(event) => handleImageError(event, item.question.opponent.build)} />
+                  <strong>{item.question.opponent.build.pokemonName}</strong>
+                </MiniPokemon>
+              </MiniMatchup>
+              <AnswerCompare>
+                <AnswerBox>내 답<strong>{answerLabel(item.answer)}</strong></AnswerBox>
+                <AnswerBox>정답<strong>{answerLabel(item.question.correctAnswer)}</strong></AnswerBox>
+              </AnswerCompare>
+              <ExplanationBox>💡 {item.question.explanation}</ExplanationBox>
+            </ReviewCard>
+          )
+        })}
+      </ReviewScroll>
+
+      <BottomAction>
+        <Button variant="primary" onPress={onHome}>홈으로</Button>
+      </BottomAction>
     </>
   )
 }
@@ -1177,6 +1543,8 @@ function AppContent() {
   const [screen, setScreen] = useState<ScreenName>(() => {
     if (globalThis.location?.hash === '#create') return 'create'
     if (globalThis.location?.hash === '#quiz') return 'quiz'
+    if (globalThis.location?.hash === '#complete') return 'complete'
+    if (globalThis.location?.hash === '#review') return 'review'
     return 'entry'
   })
   const [teamDraft, setTeamDraft] = useState<UserTeam>({
@@ -1187,7 +1555,7 @@ function AppContent() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>('normal')
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [questionIndex, setQuestionIndex] = useState(0)
-  const [lastResult, setLastResult] = useState<AnswerResult | null>(null)
+  const [quizAnswers, setQuizAnswers] = useState<QuizDraftAnswer[]>([])
   const [activeSlot, setActiveSlot] = useState(1)
 
   const teamQuery = useQuery({ queryKey: ['team'], queryFn: api.getTeam })
@@ -1197,7 +1565,7 @@ function AppContent() {
     onSuccess: (data) => {
       setQuestions(data.questions)
       setQuestionIndex(0)
-      setLastResult(null)
+      setQuizAnswers([])
       setScreen('quiz')
     },
   })
@@ -1213,8 +1581,11 @@ function AppContent() {
   }, [teamQuery.data])
 
   const activeMember = teamDraft.members.find((member) => member.slot === activeSlot) ?? teamDraft.members[0]
-  const previewQuestion = makeMockQuestion(teamDraft.members[0] ?? defaultMember(1))
-  const currentQuestion = questions[questionIndex] ?? (screen === 'quiz' ? previewQuestion : undefined)
+  const previewQuestions = makeMockQuestions(teamDraft.members[0] ?? defaultMember(1))
+  const sessionQuestions = questions.length ? questions : previewQuestions
+  const effectiveAnswers = quizAnswers.length ? quizAnswers : (screen === 'complete' || screen === 'review' ? previewQuestions.map((question, index) => ({ question, answer: index === 1 ? true : question.correctAnswer })) : [])
+  const currentQuestion = sessionQuestions[questionIndex] ?? (screen === 'quiz' ? sessionQuestions[0] : undefined)
+  const mascot = teamDraft.members.find((member) => member.pokemonName) ?? defaultMember(1)
 
   function updateMember(slot: number, patch: Partial<TeamMember>) {
     setTeamDraft((team) => ({
@@ -1230,25 +1601,22 @@ function AppContent() {
 
   function startQuiz(difficulty = selectedDifficulty ?? 'easy') {
     setSelectedDifficulty(difficulty)
+    setQuizAnswers([])
+    setQuestionIndex(0)
     generateQuiz.mutate(difficulty)
   }
 
-  async function answer(answerValue: boolean) {
+  function answer(answerValue: boolean) {
     if (!currentQuestion || answerQuestion.isPending) return
 
-    if (currentQuestion.id.startsWith('mock-')) {
-      setLastResult({
-        correct: answerValue === currentQuestion.correctAnswer,
-        correctAnswer: currentQuestion.correctAnswer,
-        explanation: currentQuestion.explanation,
-        subjectSpeed: currentQuestion.subject.speed.effectiveSpeed,
-        opponentSpeed: currentQuestion.opponent.speed.effectiveSpeed,
-      })
+    const nextAnswers = [...quizAnswers, { question: currentQuestion, answer: answerValue }]
+    setQuizAnswers(nextAnswers)
+
+    if (questionIndex >= sessionQuestions.length - 1) {
+      setScreen('complete')
       return
     }
 
-    const result = await answerQuestion.mutateAsync({ id: currentQuestion.id, answer: answerValue })
-    setLastResult(result)
     setQuestionIndex((index) => index + 1)
   }
 
@@ -1283,12 +1651,13 @@ function AppContent() {
               difficulty={selectedDifficulty}
               currentQuestion={currentQuestion}
               questionIndex={questionIndex}
-              total={questions.length}
-              lastResult={lastResult}
+              total={sessionQuestions.length}
               isLoading={generateQuiz.isPending}
               onAnswer={(value) => void answer(value)}
             />
           )}
+          {screen === 'complete' && <CompleteScreen answers={effectiveAnswers} mascot={mascot} onReview={() => setScreen('review')} onHome={() => setScreen('entry')} />}
+          {screen === 'review' && <ReviewScreen answers={effectiveAnswers} onHome={() => setScreen('entry')} />}
         </PhoneContent>
       </Phone>
     </Screen>
