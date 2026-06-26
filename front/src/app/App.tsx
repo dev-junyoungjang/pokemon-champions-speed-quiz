@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
 import { Button, Chip, Slider, Spinner } from '@heroui/react'
 import styled from '@emotion/styled'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { api } from '../shared/api/client'
@@ -46,7 +46,7 @@ const Phone = styled.div`
 const PhoneContent = styled.div`
   position: relative;
   height: 100%;
-  padding: 20px 20px 18px;
+  padding: 12px 20px 18px;
   overflow: hidden;
 `
 
@@ -54,8 +54,8 @@ const StatusBar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 22px;
-  margin-bottom: 12px;
+  height: 18px;
+  margin-bottom: 6px;
   color: #111827;
   font-size: 12px;
   font-weight: 900;
@@ -345,20 +345,34 @@ const MiniTag = styled.span`
 
 const QuizTop = styled.div`
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr;
   gap: 10px;
   align-items: center;
-  margin-bottom: 22px;
+  margin-bottom: 8px;
+`
+
+const DifficultyBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #d8f8e6;
+  color: #0a9f4b;
+  font-size: 10px;
+  font-weight: 1000;
 `
 
 const QuizPrompt = styled.div`
   text-align: center;
-  margin-bottom: 36px;
+  margin-bottom: 22px;
 `
 
 const QuizTitle = styled.h1`
-  margin: 8px 0 5px;
-  font-size: 20px;
+  margin: 8px auto 5px;
+  max-width: 310px;
+  font-size: 19px;
   line-height: 1.18;
   letter-spacing: -0.06em;
 `
@@ -371,12 +385,51 @@ const QuizHint = styled.p`
 `
 
 const QuizCard = styled(motion.div)`
-  min-height: 300px;
+  position: relative;
+  height: 318px;
   padding: 20px 15px 14px;
+  overflow: hidden;
   border-radius: 24px;
   background: #ffffff;
   box-shadow: 0 20px 52px rgba(15, 23, 42, 0.10);
   touch-action: pan-y;
+`
+
+const SwipeGradient = styled(motion.div)<{ tone: 'yes' | 'no' }>`
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: ${({ tone }) =>
+    tone === 'yes'
+      ? 'linear-gradient(235deg, rgba(23,201,100,0.30), rgba(23,201,100,0.06) 45%, rgba(255,255,255,0) 76%)'
+      : 'linear-gradient(125deg, rgba(243,18,96,0.30), rgba(243,18,96,0.06) 45%, rgba(255,255,255,0) 76%)'};
+  pointer-events: none;
+`
+
+const SwipeStamp = styled(motion.div)<{ tone: 'yes' | 'no' }>`
+  position: absolute;
+  top: 20px;
+  ${({ tone }) => (tone === 'yes' ? 'right: 18px;' : 'left: 18px;')}
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 62px;
+  height: 32px;
+  border: 2px solid ${({ tone }) => (tone === 'yes' ? '#17C964' : '#F31260')};
+  border-radius: 999px;
+  color: ${({ tone }) => (tone === 'yes' ? '#17C964' : '#F31260')};
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  font-weight: 1000;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  transform: rotate(${({ tone }) => (tone === 'yes' ? '10deg' : '-10deg')});
+  pointer-events: none;
+`
+
+const QuizCardInner = styled.div`
+  position: relative;
+  z-index: 1;
 `
 
 const VersusArea = styled.div`
@@ -401,16 +454,16 @@ const SideLabel = styled.span<{ color: string }>`
 
 const QuizArtCircle = styled.div`
   display: grid;
-  width: 92px;
-  height: 92px;
+  width: 84px;
+  height: 84px;
   place-items: center;
   border-radius: 50%;
   background: #f7f8fa;
 `
 
 const QuizArtwork = styled.img`
-  max-width: 96px;
-  max-height: 86px;
+  max-width: 88px;
+  max-height: 78px;
   object-fit: contain;
   filter: drop-shadow(0 10px 12px rgba(15, 23, 42, 0.16));
 `
@@ -460,7 +513,7 @@ const Mystery = styled.div`
 `
 
 const AppliedRules = styled.div`
-  margin-top: 72px;
+  margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid #edf0f4;
 `
@@ -542,9 +595,10 @@ const CompleteWrap = styled.div`
 
 const CompleteCenter = styled.div`
   display: grid;
-  align-content: center;
+  align-content: start;
   justify-items: center;
-  gap: 14px;
+  gap: 12px;
+  padding-top: 54px;
 `
 
 const MascotStage = styled.div`
@@ -555,8 +609,8 @@ const MascotStage = styled.div`
 `
 
 const Mascot = styled.img`
-  width: 112px;
-  height: 112px;
+  width: 104px;
+  height: 104px;
   object-fit: contain;
   image-rendering: auto;
   filter: drop-shadow(0 18px 18px rgba(15, 23, 42, 0.18));
@@ -584,7 +638,7 @@ const MascotShadow = styled.div`
 
 const CompleteTitle = styled.h1`
   margin: 0;
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.05;
   letter-spacing: -0.07em;
 `
@@ -598,13 +652,14 @@ const CompleteSubtitle = styled.p`
 
 const BigScore = styled.div`
   display: flex;
+  margin-top: 2px;
   align-items: baseline;
   gap: 5px;
   color: #111827;
   font-weight: 1000;
 
   strong {
-    font-size: 56px;
+    font-size: 48px;
     line-height: 1;
     letter-spacing: -0.08em;
   }
@@ -645,8 +700,31 @@ const SummaryCard = styled.div`
   }
 `
 
+const CompleteActions = styled.div`
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 8px;
+
+  button {
+    width: 100%;
+    height: 42px;
+    border-radius: 13px;
+    font-weight: 900;
+  }
+`
+
+const SoundButton = styled.button`
+  border: 1px solid #e4e4e7;
+  background: #ffffff;
+  color: #3f3f46;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+`
+
 const ReviewScroll = styled.div`
-  height: calc(100% - 122px);
+  height: calc(100% - 86px);
   overflow-y: auto;
   padding: 2px 2px 84px;
   scrollbar-width: none;
@@ -660,9 +738,9 @@ const ReviewHeader = styled(Header)`
 
 const ReviewCard = styled.article`
   display: grid;
-  gap: 10px;
-  margin-bottom: 11px;
-  padding: 13px;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 12px;
   border-radius: 18px;
   background: #ffffff;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.055);
@@ -674,6 +752,19 @@ const ReviewCardTop = styled.div`
   justify-content: space-between;
   gap: 10px;
   color: #71717a;
+  font-size: 11px;
+  font-weight: 1000;
+`
+
+const ScorePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 28px;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 1000;
 `
@@ -988,11 +1079,11 @@ function mockMember(slot: number, name: string, dex: number, baseSpeed: number):
 }
 
 function makeMockQuestions(subject: TeamMember): QuizQuestion[] {
-  const baseSubject = subject.pokemonName ? subject : mockMember(1, 'Garchomp', 445, 102)
+  const baseSubject = subject.pokemonName ? subject : mockMember(1, '한카리아스', 445, 102)
   const opponents = [
-    mockMember(99, 'Iron Hands', 992, 50),
-    mockMember(100, 'Dragapult', 887, 142),
-    mockMember(101, 'Dragonite', 149, 80),
+    mockMember(99, '무쇠손', 992, 50),
+    mockMember(100, '드래펄트', 887, 142),
+    mockMember(101, '망나뇽', 149, 80),
   ]
 
   return opponents.map((opponent, index) => {
@@ -1002,7 +1093,7 @@ function makeMockQuestions(subject: TeamMember): QuizQuestion[] {
       id: `mock-speed-preview-${index + 1}`,
       difficulty: 'easy',
       mode: 'IS_FASTER',
-      statement: `${baseSubject.pokemonName}의 기본 Speed는 ${opponent.pokemonName}보다 높다.`,
+      statement: `내 ${baseSubject.pokemonName}가 ${opponent.pokemonName}보다 빠를까?`,
       answerType: 'YES_NO',
       correctAnswer: subjectSpeed > opponentSpeed,
       subject: {
@@ -1229,11 +1320,18 @@ function QuizScreen({
   isLoading: boolean
   onAnswer: (answer: boolean) => void
 }) {
+  const x = useMotionValue(0)
+  const rotate = useTransform(x, [-180, 0, 180], [-7, 0, 7])
+  const yesOpacity = useTransform(x, [18, 115], [0, 1])
+  const noOpacity = useTransform(x, [-115, -18], [1, 0])
+  const yesScale = useTransform(x, [18, 115], [0.92, 1.06])
+  const noScale = useTransform(x, [-115, -18], [1.06, 0.92])
+
   return (
     <>
       <QuizTop>
-        <Chip color="success" size="sm" variant="soft">{difficulty ? difficultyTitle({ id: difficulty, label: difficulty, description: '' }) : '쉬움'}</Chip>
-        <PageSubtitle>{Math.min(questionIndex + 1, total || 1)} / {total || 5}</PageSubtitle>
+        <DifficultyBadge>{difficulty ? difficultyTitle({ id: difficulty, label: difficulty, description: '' }) : '쉬움'}</DifficultyBadge>
+        <PageSubtitle style={{ justifySelf: 'end' }}>{Math.min(questionIndex + 1, total || 1)} / {total || 5}</PageSubtitle>
       </QuizTop>
 
       <QuizPrompt>
@@ -1255,15 +1353,27 @@ function QuizScreen({
           <QuizCard
             key={currentQuestion.id}
             drag="x"
+            style={{ x, rotate }}
+            dragElastic={0.16}
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={(_, info) => {
-              if (info.offset.x > 90) onAnswer(true)
-              if (info.offset.x < -90) onAnswer(false)
+              if (info.offset.x > 100) {
+                onAnswer(true)
+                return
+              }
+              if (info.offset.x < -100) {
+                onAnswer(false)
+              }
             }}
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96 }}
           >
+            <SwipeGradient tone="no" style={{ opacity: noOpacity }} />
+            <SwipeGradient tone="yes" style={{ opacity: yesOpacity }} />
+            <SwipeStamp tone="no" style={{ opacity: noOpacity, scale: noScale }}>아니오 ✕</SwipeStamp>
+            <SwipeStamp tone="yes" style={{ opacity: yesOpacity, scale: yesScale }}>예 ✓</SwipeStamp>
+            <QuizCardInner>
             <VersusArea>
               <QuizSide>
                 <SideLabel color="#0b7bf3">MY</SideLabel>
@@ -1290,6 +1400,7 @@ function QuizScreen({
               <RuleLabel>적용 변수</RuleLabel>
               <TagRow><MiniTag>● 베이스 속도 비교</MiniTag></TagRow>
             </AppliedRules>
+            </QuizCardInner>
           </QuizCard>
         </AnimatePresence>
       )}
@@ -1305,6 +1416,26 @@ function QuizScreen({
   )
 }
 
+
+function playChime() {
+  const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  if (!AudioContextCtor) return
+  const ctx = new AudioContextCtor()
+  ;[523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+    const oscillator = ctx.createOscillator()
+    const gain = ctx.createGain()
+    oscillator.type = 'triangle'
+    oscillator.frequency.value = frequency
+    oscillator.connect(gain)
+    gain.connect(ctx.destination)
+    const time = ctx.currentTime + index * 0.11
+    gain.gain.setValueAtTime(0, time)
+    gain.gain.linearRampToValueAtTime(0.2, time + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0008, time + 0.32)
+    oscillator.start(time)
+    oscillator.stop(time + 0.34)
+  })
+}
 
 function CompleteScreen({ answers, mascot, onReview, onHome }: { answers: QuizDraftAnswer[]; mascot: TeamMember; onReview: () => void; onHome: () => void }) {
   const summary = buildQuizSummary(answers)
@@ -1337,9 +1468,10 @@ function CompleteScreen({ answers, mascot, onReview, onHome }: { answers: QuizDr
           <SummaryCard><span>정답률</span><strong>{summary.accuracy}%</strong></SummaryCard>
         </SummaryGrid>
       </CompleteCenter>
-      <BottomAction>
+      <CompleteActions>
+        <SoundButton type="button" onClick={playChime}>🔊 완료 효과음 듣기</SoundButton>
         <Button variant="primary" onPress={summary.total ? onReview : onHome}>{summary.total ? '정답 & 해설 보기' : '홈으로'}</Button>
-      </BottomAction>
+      </CompleteActions>
     </CompleteWrap>
   )
 }
@@ -1349,11 +1481,11 @@ function ReviewScreen({ answers, onHome }: { answers: QuizDraftAnswer[]; onHome:
   return (
     <>
       <ReviewHeader>
+        <IconButton onClick={onHome}>‹</IconButton>
         <HeaderCopy>
           <PageTitle>정답 & 해설</PageTitle>
-          <PageSubtitle>실효 속도 계산을 다시 확인해요</PageSubtitle>
         </HeaderCopy>
-        <Chip color="success" variant="soft">{summary.correct}/{summary.total}</Chip>
+        <ScorePill>{summary.correct}/{summary.total}</ScorePill>
       </ReviewHeader>
 
       <ReviewScroll>
