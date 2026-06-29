@@ -13,63 +13,30 @@ const queryClient = new QueryClient()
 type ScreenName = 'entry' | 'difficulty' | 'generating' | 'quiz' | 'create' | 'complete' | 'review'
 
 const Screen = styled.main`
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: #e9e9ec;
+  min-height: 100dvh;
+  background: #eef0f3;
   color: #111827;
   font-family:
     'Noto Sans KR', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 `
 
-const Phone = styled.div`
+const Stage = styled.div`
   position: relative;
-  width: min(100%, 390px);
-  height: min(844px, calc(100vh - 36px));
-  min-height: 720px;
-  overflow: hidden;
-  border-radius: 34px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 24px 20px calc(16px + env(safe-area-inset-bottom));
   background: #f8f8f9;
-  box-shadow:
-    0 28px 90px rgba(15, 23, 42, 0.16),
-    inset 0 0 0 8px rgba(255, 255, 255, 0.72);
 
-  @media (max-width: 430px) {
-    width: 100%;
-    height: calc(100vh - 16px);
-    min-height: 680px;
+  @media (min-width: 600px) {
+    margin: 28px auto;
+    min-height: calc(100dvh - 56px);
+    padding: 28px 28px;
     border-radius: 28px;
-  }
-`
-
-const PhoneContent = styled.div`
-  position: relative;
-  height: 100%;
-  padding: 12px 20px 18px;
-  overflow: hidden;
-`
-
-const StatusBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 18px;
-  margin-bottom: 6px;
-  color: #111827;
-  font-size: 12px;
-  font-weight: 900;
-`
-
-const Signal = styled.div`
-  display: flex;
-  gap: 3px;
-
-  span {
-    width: 5px;
-    height: 10px;
-    border-radius: 1px;
-    background: #4b5563;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
   }
 `
 
@@ -149,16 +116,10 @@ const Pill = styled.button<{ active?: boolean }>`
 
 const EntryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 11px;
-  max-height: calc(100% - 164px);
-  overflow-y: auto;
+  align-content: start;
   padding: 1px 1px 12px;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 `
 
 const EntryCard = styled.button`
@@ -260,14 +221,15 @@ const StatLine = styled.div`
 `
 
 const BottomAction = styled.div`
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 18px;
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 14px 0 calc(6px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, #f8f8f9 72%, rgba(248, 248, 249, 0));
 
   button {
     width: 100%;
-    height: 50px;
+    height: 52px;
     border-radius: 15px;
     font-weight: 900;
     box-shadow: 0 12px 26px rgba(0, 116, 245, 0.25);
@@ -526,12 +488,10 @@ const RuleLabel = styled.div`
 `
 
 const SwipeActions = styled.div`
-  position: absolute;
-  left: 48px;
-  right: 48px;
-  bottom: 34px;
   display: flex;
   justify-content: space-between;
+  margin-top: auto;
+  padding: 22px 28px calc(6px + env(safe-area-inset-bottom));
   font-size: 13px;
   font-weight: 1000;
 
@@ -563,10 +523,11 @@ const LoadingLayer = styled.div`
 const GeneratingWrap = styled.div`
   position: relative;
   display: grid;
-  min-height: calc(100% - 24px);
+  flex: 1;
+  min-height: 60vh;
   grid-template-rows: 1fr auto;
   overflow: hidden;
-  border-radius: 0 0 24px 24px;
+  border-radius: 24px;
   background:
     radial-gradient(circle at 50% -6%, #e6f1fe 0, rgba(230, 241, 254, 0.58) 34%, rgba(250, 250, 250, 0) 58%),
     #fafafa;
@@ -767,9 +728,9 @@ const ConfettiPiece = styled.span<{ left: number; delay: number; color: string }
 
 const CompleteWrap = styled.div`
   position: relative;
-  display: grid;
-  height: calc(100% - 34px);
-  grid-template-rows: 1fr auto;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   text-align: center;
 `
 
@@ -881,16 +842,14 @@ const SummaryCard = styled.div`
 `
 
 const CompleteActions = styled.div`
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
   display: grid;
   gap: 8px;
+  margin-top: auto;
+  padding-top: 18px;
 
   button {
     width: 100%;
-    height: 42px;
+    height: 48px;
     border-radius: 13px;
     font-weight: 900;
   }
@@ -904,12 +863,7 @@ const SoundButton = styled.button`
 `
 
 const ReviewScroll = styled.div`
-  height: calc(100% - 86px);
-  overflow-y: auto;
-  padding: 2px 2px 84px;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar { display: none; }
+  padding: 2px 2px 8px;
 `
 
 const ReviewHeader = styled(Header)`
@@ -1031,14 +985,7 @@ const ExplanationBox = styled.div`
 `
 
 const CreateScroll = styled.div`
-  height: calc(100% - 112px);
-  overflow-y: auto;
-  padding: 2px 2px 82px;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  padding: 2px 2px 8px;
 `
 
 const FormHero = styled.div`
@@ -2104,52 +2051,45 @@ function AppContent() {
 
   return (
     <Screen>
-      <Phone>
-        <PhoneContent>
-          <StatusBar>
-            <span>9:41</span>
-            <Signal><span /><span /><span /><span /></Signal>
-          </StatusBar>
-
-          {screen === 'entry' && <EntryScreen teamDraft={teamDraft} onStart={() => setScreen('difficulty')} onOpenCreate={openCreate} />}
-          {screen === 'create' && activeMember && (
-            <CreatePokemonScreen
-              member={activeMember}
-              onBack={() => setScreen('entry')}
-              onUpdate={(patch) => updateMember(activeSlot, patch)}
-            />
-          )}
-          {screen === 'difficulty' && (
-            <DifficultyScreen
-              options={difficultiesQuery.data}
-              selectedDifficulty={selectedDifficulty}
-              onBack={() => setScreen('entry')}
-              onSelect={setSelectedDifficulty}
-              onStart={() => startQuiz(selectedDifficulty ?? 'easy')}
-            />
-          )}
-          {screen === 'generating' && (
-            <GeneratingQuizScreen
-              difficulty={selectedDifficulty}
-              isError={generateQuiz.isError}
-              onBack={() => setScreen('difficulty')}
-              onRetry={() => startQuiz(selectedDifficulty ?? 'easy')}
-            />
-          )}
-          {screen === 'quiz' && (
-            <QuizScreen
-              difficulty={selectedDifficulty}
-              currentQuestion={currentQuestion}
-              questionIndex={questionIndex}
-              total={sessionQuestions.length}
-              isLoading={generateQuiz.isPending}
-              onAnswer={(value) => void answer(value)}
-            />
-          )}
-          {screen === 'complete' && <CompleteScreen answers={effectiveAnswers} mascot={mascot} onReview={() => setScreen('review')} onHome={() => setScreen('entry')} />}
-          {screen === 'review' && <ReviewScreen answers={effectiveAnswers} onHome={() => setScreen('entry')} />}
-        </PhoneContent>
-      </Phone>
+      <Stage>
+        {screen === 'entry' && <EntryScreen teamDraft={teamDraft} onStart={() => setScreen('difficulty')} onOpenCreate={openCreate} />}
+        {screen === 'create' && activeMember && (
+          <CreatePokemonScreen
+            member={activeMember}
+            onBack={() => setScreen('entry')}
+            onUpdate={(patch) => updateMember(activeSlot, patch)}
+          />
+        )}
+        {screen === 'difficulty' && (
+          <DifficultyScreen
+            options={difficultiesQuery.data}
+            selectedDifficulty={selectedDifficulty}
+            onBack={() => setScreen('entry')}
+            onSelect={setSelectedDifficulty}
+            onStart={() => startQuiz(selectedDifficulty ?? 'easy')}
+          />
+        )}
+        {screen === 'generating' && (
+          <GeneratingQuizScreen
+            difficulty={selectedDifficulty}
+            isError={generateQuiz.isError}
+            onBack={() => setScreen('difficulty')}
+            onRetry={() => startQuiz(selectedDifficulty ?? 'easy')}
+          />
+        )}
+        {screen === 'quiz' && (
+          <QuizScreen
+            difficulty={selectedDifficulty}
+            currentQuestion={currentQuestion}
+            questionIndex={questionIndex}
+            total={sessionQuestions.length}
+            isLoading={generateQuiz.isPending}
+            onAnswer={(value) => void answer(value)}
+          />
+        )}
+        {screen === 'complete' && <CompleteScreen answers={effectiveAnswers} mascot={mascot} onReview={() => setScreen('review')} onHome={() => setScreen('entry')} />}
+        {screen === 'review' && <ReviewScreen answers={effectiveAnswers} onHome={() => setScreen('entry')} />}
+      </Stage>
     </Screen>
   )
 }
