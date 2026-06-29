@@ -22,6 +22,12 @@ This directory stores reviewable JSONL exports before any DynamoDB import.
   - Includes `pk`, `sk`, `pokemonId`, `nameEn`, `nameKo`, `types`, `baseStats`, `availability`, and `source`.
 - `rejected/pokemon_species_regulation_m_b_rejected.jsonl`
   - Failed/mismatched records. The current export has zero rejected records.
+- `rules/regulation_m_b_rules.json`
+  - Machine-readable official Regulation M-B battle rules and source links.
+- `rules/speed_formula_v1.json`
+  - Machine-readable speed formula contract used by tests and explanation validation.
+- `rules/rule_sources.jsonl`
+  - One line per source used to build or cross-check the rules data.
 
 ## Regenerate
 

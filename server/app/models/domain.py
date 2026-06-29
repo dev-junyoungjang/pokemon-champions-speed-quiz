@@ -39,6 +39,17 @@ class StatSpread(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class StatPointSpread(BaseModel):
+    hp: int = Field(default=0, ge=0, le=32)
+    atk: int = Field(default=0, ge=0, le=32)
+    def_: int = Field(default=0, alias="def", ge=0, le=32)
+    spa: int = Field(default=0, ge=0, le=32)
+    spd: int = Field(default=0, ge=0, le=32)
+    spe: int = Field(default=0, ge=0, le=32)
+
+    model_config = {"populate_by_name": True}
+
+
 class IvSpread(BaseModel):
     hp: int = Field(default=31, ge=0, le=31)
     atk: int = Field(default=31, ge=0, le=31)
@@ -71,10 +82,13 @@ class PokemonBuild(BaseModel):
     ability: str | None = None
     item: str | None = None
     evs: StatSpread = Field(default_factory=StatSpread)
+    stat_points: StatPointSpread = Field(default_factory=StatPointSpread, alias="statPoints")
     ivs: IvSpread = Field(default_factory=IvSpread)
     speed_stage: int = Field(default=0, alias="speedStage", ge=-6, le=6)
     weather: str | None = None
     status: str | None = None
+    tailwind: bool = False
+    item_consumed: bool = Field(default=False, alias="itemConsumed")
 
     model_config = {"populate_by_name": True}
 

@@ -1,0 +1,84 @@
+{
+  "ruleset": "pokemon_champions",
+  "formulaVersion": "speed:v1",
+  "status": "community_cross_checked_pending_official_formula_export",
+  "level": 50,
+  "statPointSystem": {
+    "name": "Stat Points / AP",
+    "maxPerStat": 32,
+    "maxTotal": 66,
+    "legacyEvConversion": {
+      "description": "Compatibility conversion used by community Champions tools when importing legacy EV-like values.",
+      "formula": "sp = 0 if ev < 4 else min(1 + floor((ev - 4) / 8), 32)",
+      "inverseFormula": "ev = 0 if sp <= 0 else 4 + (min(sp, 32) - 1) * 8"
+    }
+  },
+  "rawSpeedFormula": {
+    "description": "Non-HP stat formula used for Pokémon Champions speed calculators.",
+    "formula": "floor((floor(((2 * base + iv + 2 * statPoints) * level) / 100) + 5) * natureModifier)",
+    "defaultIv": 31,
+    "rounding": [
+      "floor after the level term",
+      "floor after nature multiplier"
+    ]
+  },
+  "natureModifiers": {
+    "increasesSpeed": ["Timid", "Jolly", "Hasty", "Naive"],
+    "decreasesSpeed": ["Brave", "Quiet", "Relaxed", "Sassy"],
+    "neutralMultiplier": "1/1",
+    "upMultiplier": "11/10",
+    "downMultiplier": "9/10"
+  },
+  "speedStageModifiers": {
+    "+6": "8/2",
+    "+5": "7/2",
+    "+4": "6/2",
+    "+3": "5/2",
+    "+2": "4/2",
+    "+1": "3/2",
+    "0": "1/1",
+    "-1": "2/3",
+    "-2": "2/4",
+    "-3": "2/5",
+    "-4": "2/6",
+    "-5": "2/7",
+    "-6": "2/8"
+  },
+  "fieldModifiers": {
+    "tailwind": "2/1"
+  },
+  "itemModifiers": {
+    "Choice Scarf": "3/2",
+    "Iron Ball": "1/2",
+    "Macho Brace": "1/2"
+  },
+  "abilityModifiers": {
+    "Swift Swim:rain": "2/1",
+    "Chlorophyll:sun": "2/1",
+    "Sand Rush:sand": "2/1",
+    "Slush Rush:snow": "2/1",
+    "Unburden:itemConsumed": "2/1",
+    "Quick Feet:statused": "3/2"
+  },
+  "statusModifiers": {
+    "paralysis": "1/2"
+  },
+  "modifierOrder": [
+    "rawSpeed",
+    "statStage",
+    "weatherOrStateAbility",
+    "tailwind",
+    "item",
+    "status"
+  ],
+  "roundingPolicy": {
+    "effectiveSpeed": "floor after each applied multiplier"
+  },
+  "sourceIds": [
+    "official-regulation-m-b-news",
+    "gamewith-speed-calculator",
+    "champdex-speed-tool",
+    "ismonfaster-speed-calculator",
+    "github-is-this-mon-faster"
+  ]
+}

@@ -15,7 +15,13 @@ Reviewable Regulation M-B roster exports live under `server/data/`:
 - `server/data/curated/pokemon_species_regulation_m_b.jsonl`
 - `server/data/rejected/pokemon_species_regulation_m_b_rejected.jsonl`
 
-Regenerate them with:
+Machine-readable rules and source records live under `server/data/rules/`:
+
+- `server/data/rules/regulation_m_b_rules.json`
+- `server/data/rules/speed_formula_v1.json`
+- `server/data/rules/rule_sources.jsonl`
+
+Regenerate roster exports with:
 
 ```bash
 python server/scripts/crawl_regulation_mb.py

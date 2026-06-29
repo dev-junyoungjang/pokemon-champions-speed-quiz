@@ -1,0 +1,45 @@
+{
+  "ruleset": "pokemon_champions",
+  "regulationSet": "M-B",
+  "duration": {
+    "startsAt": "2026-06-17T02:00:00Z",
+    "endsAt": "2026-09-02T01:59:00Z"
+  },
+  "eligiblePokemon": {
+    "policy": "Only Pokémon displayed in the official Eligible Pokémon page are eligible.",
+    "curatedJsonl": "server/data/curated/pokemon_species_regulation_m_b.jsonl",
+    "officialUrlEn": "https://web-view.app.pokemonchampions.jp/battle/pages/events/rs178066986988lmoqpm/en/pokemon.html",
+    "officialUrlKo": "https://web-view.app.pokemonchampions.jp/battle/pages/events/rs178066986988lmoqpm/ko/pokemon.html"
+  },
+  "battleRules": {
+    "duplicateHeldItemsAllowed": false,
+    "megaEvolutionPerBattle": 1,
+    "totalTimeSeconds": 1200,
+    "playerTimeSeconds": 420,
+    "turnTimeSeconds": 45,
+    "previewTimeSeconds": 90
+  },
+  "newlyAllowedMegaEvolutions": [
+    "Mega Raichu X",
+    "Mega Raichu Y",
+    "Mega Sceptile",
+    "Mega Blaziken",
+    "Mega Swampert",
+    "Mega Mawile",
+    "Mega Metagross",
+    "Mega Staraptor",
+    "Mega Scolipede",
+    "Mega Scrafty",
+    "Mega Eelektross",
+    "Mega Pyroar",
+    "Mega Malamar",
+    "Mega Barbaracle",
+    "Mega Dragalge",
+    "Mega Falinks"
+  ],
+  "sourceIds": [
+    "official-regulation-m-b-news",
+    "official-regulation-m-b-eligible-pokemon-en",
+    "official-regulation-m-b-eligible-pokemon-ko"
+  ]
+}

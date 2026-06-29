@@ -9,6 +9,8 @@ export type BaseStats = {
 
 export type StatSpread = Partial<BaseStats>
 
+export type StatPointSpread = Partial<BaseStats>
+
 export type PokemonImageAssets = {
   primaryArtworkUrl?: string | null
   fallbackArtworkUrl?: string | null
@@ -29,10 +31,13 @@ export type TeamMember = {
   ability?: string | null
   item?: string | null
   evs: StatSpread
+  statPoints?: StatPointSpread
   ivs: StatSpread
   speedStage?: number
   weather?: string | null
   status?: string | null
+  tailwind?: boolean
+  itemConsumed?: boolean
 }
 
 export type UserTeam = {
