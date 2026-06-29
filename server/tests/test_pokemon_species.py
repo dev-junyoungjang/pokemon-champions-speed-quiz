@@ -15,6 +15,9 @@ def test_pokemon_species_lookup_by_korean_name() -> None:
     assert species["nameKo"] == "피카츄"
     assert species["nationalDexNumber"] == 25
     assert species["baseStats"]["spe"] == 90
+    assert species["types"] == ["electric"]
+    assert species["availableMoves"][0]["moveId"] == "thunderbolt"
+    assert species["availableMoves"][0]["nameKo"] == "10만볼트"
     assert species["imageAssets"]["primaryArtworkUrl"].endswith("/025.png")
 
 

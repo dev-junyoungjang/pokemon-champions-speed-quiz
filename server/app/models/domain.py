@@ -71,6 +71,18 @@ class PokemonImageAssets(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class PokemonMoveOption(BaseModel):
+    move_id: str = Field(alias="moveId")
+    name_en: str = Field(alias="nameEn")
+    name_ko: str = Field(alias="nameKo")
+    type: str
+    damage_class: str | None = Field(default=None, alias="damageClass")
+    power: int | None = None
+    accuracy: int | None = None
+
+    model_config = {"populate_by_name": True}
+
+
 class PokemonSpecies(BaseModel):
     pokemon_id: str = Field(alias="pokemonId")
     name_en: str = Field(alias="nameEn")
@@ -83,6 +95,7 @@ class PokemonSpecies(BaseModel):
     base_stats: BaseStats = Field(alias="baseStats")
     image_assets: PokemonImageAssets = Field(alias="imageAssets")
     types: list[str] = Field(default_factory=list)
+    available_moves: list[PokemonMoveOption] = Field(default_factory=list, alias="availableMoves")
 
     model_config = {"populate_by_name": True}
 
@@ -93,6 +106,9 @@ class PokemonBuild(BaseModel):
     national_dex_number: int | None = Field(default=None, alias="nationalDexNumber")
     image_assets: PokemonImageAssets | None = Field(default=None, alias="imageAssets")
     base_stats_snapshot: BaseStats = Field(alias="baseStatsSnapshot")
+    species_types: list[str] = Field(default_factory=list, alias="speciesTypes")
+    available_moves: list[PokemonMoveOption] = Field(default_factory=list, alias="availableMoves")
+    moves: list[str] = Field(default_factory=list)
     level: int = Field(default=50, ge=1, le=100)
     nature: str = "Neutral"
     ability: str | None = None

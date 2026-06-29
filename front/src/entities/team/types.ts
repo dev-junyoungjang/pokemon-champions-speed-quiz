@@ -19,6 +19,16 @@ export type PokemonImageAssets = {
   hotlinkPolicy?: string
 }
 
+export type PokemonMoveOption = {
+  moveId: string
+  nameEn: string
+  nameKo: string
+  type: string
+  damageClass?: string | null
+  power?: number | null
+  accuracy?: number | null
+}
+
 export type TeamMember = {
   slot: number
   pokemonId: string
@@ -26,6 +36,9 @@ export type TeamMember = {
   nationalDexNumber?: number | null
   imageAssets?: PokemonImageAssets | null
   baseStatsSnapshot: BaseStats
+  speciesTypes?: string[]
+  availableMoves?: PokemonMoveOption[]
+  moves?: string[]
   level: number
   nature: string
   ability?: string | null
@@ -52,6 +65,7 @@ export type PokemonSpecies = {
   baseStats: BaseStats
   imageAssets: PokemonImageAssets
   types: string[]
+  availableMoves: PokemonMoveOption[]
 }
 
 export type UserTeam = {

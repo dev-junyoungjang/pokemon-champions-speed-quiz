@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { api } from '../shared/api/client'
 import type { Difficulty, DifficultyOption, QuizQuestion } from '../entities/quiz/types'
-import type { PokemonSpecies, TeamMember, UserTeam } from '../entities/team/types'
+import type { PokemonMoveOption, PokemonSpecies, TeamMember, UserTeam } from '../entities/team/types'
 
 const queryClient = new QueryClient()
 
@@ -1177,6 +1177,26 @@ const TinyRoundButton = styled.button`
 `
 
 const typeColors = ['#79d19d', '#a78bfa', '#f59e0b', '#ef4444', '#60a5fa', '#f472b6']
+const typeMeta: Record<string, { ko: string; color: string }> = {
+  normal: { ko: '노말', color: '#a8a77a' },
+  fire: { ko: '불꽃', color: '#ee8130' },
+  water: { ko: '물', color: '#6390f0' },
+  electric: { ko: '전기', color: '#f7d02c' },
+  grass: { ko: '풀', color: '#7ac74c' },
+  ice: { ko: '얼음', color: '#96d9d6' },
+  fighting: { ko: '격투', color: '#c22e28' },
+  poison: { ko: '독', color: '#a33ea1' },
+  ground: { ko: '땅', color: '#e2bf65' },
+  flying: { ko: '비행', color: '#a98ff3' },
+  psychic: { ko: '에스퍼', color: '#f95587' },
+  bug: { ko: '벌레', color: '#a6b91a' },
+  rock: { ko: '바위', color: '#b6a136' },
+  ghost: { ko: '고스트', color: '#735797' },
+  dragon: { ko: '드래곤', color: '#6f35fc' },
+  dark: { ko: '악', color: '#705746' },
+  steel: { ko: '강철', color: '#b7b7ce' },
+  fairy: { ko: '페어리', color: '#d685ad' },
+}
 const difficultyTones = ['#c8ffe3', '#dbeafe', '#ffe4a8', '#ffd1e1', '#ede9fe']
 const confettiColors = ['#006FEE', '#17C964', '#F31260', '#F5A524', '#A33EA1', '#63BC5A']
 
@@ -1230,7 +1250,16 @@ function pokemonPatchFromSpecies(species: PokemonSpecies): Partial<TeamMember> {
     nationalDexNumber: species.nationalDexNumber,
     imageAssets: species.imageAssets,
     baseStatsSnapshot: species.baseStats,
+    speciesTypes: species.types,
+    availableMoves: species.availableMoves,
+    moves: species.availableMoves.slice(0, 4).map((move) => move.moveId),
   }
+}
+
+function moveOptionLabel(move: PokemonMoveOption) {
+  const type = typeMeta[move.type]?.ko ?? move.type
+  const power = move.power ? ` / 위력 ${move.power}` : ''
+  return `${move.nameKo} (${type}${power})`
 }
 
 type QuizDraftAnswer = {
@@ -1252,6 +1281,9 @@ const defaultMember = (slot: number): TeamMember => ({
   nationalDexNumber: slot === 1 ? 445 : null,
   imageAssets: slot === 1 ? imageAssetsFromDex(445) : null,
   baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: slot === 1 ? 102 : 80 },
+  speciesTypes: slot === 1 ? ['dragon', 'ground'] : [],
+  availableMoves: [],
+  moves: [],
   level: 50,
   nature: 'Jolly',
   ability: null,
@@ -1268,6 +1300,9 @@ function mockMember(slot: number, name: string, dex: number, baseSpeed: number):
     nationalDexNumber: dex,
     imageAssets: imageAssetsFromDex(dex),
     baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: baseSpeed },
+    speciesTypes: [],
+    availableMoves: [],
+    moves: [],
     level: 50,
     nature: 'Jolly',
     ability: null,
@@ -1856,6 +1891,12 @@ function CreatePokemonScreen({
     })
   }
 
+  function updateMove(index: number, moveId: string) {
+    const moves = [...(member.moves ?? [])]
+    moves[index] = moveId
+    onUpdate({ moves })
+  }
+
   const pokemonLookupQuery = useMemo(() => member.pokemonName.trim(), [member.pokemonName])
 
   useEffect(() => {
@@ -1879,6 +1920,8 @@ function CreatePokemonScreen({
   }, [pokemonLookupQuery])
 
   const previewMember = member.pokemonName ? member : { ...member, pokemonName: '한카리아스', nationalDexNumber: 445, imageAssets: imageAssetsFromDex(445) }
+  const displayTypes = member.speciesTypes?.length ? member.speciesTypes : []
+  const availableMoves = member.availableMoves ?? []
 
   return (
     <>
@@ -1908,15 +1951,26 @@ function CreatePokemonScreen({
         </FormHero>
 
         <TypeChipRow>
-          <SmallTypeChip color="#79d19d">드래곤</SmallTypeChip>
-          <SmallTypeChip color="#a78bfa">땅</SmallTypeChip>
+          {displayTypes.length ? displayTypes.map((type, index) => {
+            const meta = typeMeta[type] ?? { ko: type, color: typeColors[index % typeColors.length] }
+            return <SmallTypeChip key={type} color={meta.color}>{meta.ko}</SmallTypeChip>
+          }) : <SmallTypeChip color="#d1d5db">타입 정보 없음</SmallTypeChip>}
         </TypeChipRow>
 
         <TwoColumnFields>
-          {[1, 2, 3, 4].map((index) => (
+          {[0, 1, 2, 3].map((index) => (
             <FieldLabel key={index}>
-              기술 {index}
-              <SelectLike type="button">기술 선택 <span>⌄</span></SelectLike>
+              기술 {index + 1}
+              <SelectField
+                value={member.moves?.[index] ?? ''}
+                onChange={(event) => updateMove(index, event.target.value)}
+                disabled={!availableMoves.length}
+              >
+                <option value="">{availableMoves.length ? '기술 선택' : '사용 가능 기술 없음'}</option>
+                {availableMoves.map((move) => (
+                  <option key={move.moveId} value={move.moveId}>{moveOptionLabel(move)}</option>
+                ))}
+              </SelectField>
             </FieldLabel>
           ))}
         </TwoColumnFields>
