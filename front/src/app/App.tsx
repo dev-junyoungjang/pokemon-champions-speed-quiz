@@ -1089,6 +1089,25 @@ const TextField = styled.input`
   }
 `
 
+const SelectField = styled.select`
+  width: 100%;
+  height: 34px;
+  min-width: 0;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0 9px;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 800;
+  outline: none;
+
+  &:focus {
+    border-color: #0b7bf3;
+    box-shadow: 0 0 0 3px rgba(11, 123, 243, 0.10);
+  }
+`
+
 const SelectLike = styled.button`
   display: flex;
   align-items: center;
@@ -1214,6 +1233,49 @@ const typeColors = ['#79d19d', '#a78bfa', '#f59e0b', '#ef4444', '#60a5fa', '#f47
 const difficultyTones = ['#c8ffe3', '#dbeafe', '#ffe4a8', '#ffd1e1', '#ede9fe']
 const confettiColors = ['#006FEE', '#17C964', '#F31260', '#F5A524', '#A33EA1', '#63BC5A']
 
+const knownPokemon = [
+  { id: 'garchomp', nameEn: 'Garchomp', nameKo: '한카리아스', nationalDexNumber: 445, baseSpeed: 102 },
+  { id: 'pikachu', nameEn: 'Pikachu', nameKo: '피카츄', nationalDexNumber: 25, baseSpeed: 90 },
+  { id: 'charizard', nameEn: 'Charizard', nameKo: '리자몽', nationalDexNumber: 6, baseSpeed: 100 },
+]
+
+function normalizePokemonName(value: string) {
+  return value.trim().toLowerCase().replace(/[\s._]+/g, '-')
+}
+
+function resolveKnownPokemon(value: string) {
+  const normalized = normalizePokemonName(value)
+  return knownPokemon.find((pokemon) => (
+    normalizePokemonName(pokemon.nameEn) === normalized
+    || normalizePokemonName(pokemon.nameKo) === normalized
+    || pokemon.id === normalized
+  ))
+}
+
+function pokemonPatchFromName(value: string): Partial<TeamMember> {
+  const known = resolveKnownPokemon(value)
+  if (!known) {
+    return {
+      pokemonName: value,
+      pokemonId: normalizePokemonName(value),
+    }
+  }
+  return {
+    pokemonId: known.id,
+    pokemonName: known.nameKo,
+    nationalDexNumber: known.nationalDexNumber,
+    imageAssets: imageAssetsFromDex(known.nationalDexNumber),
+    baseStatsSnapshot: {
+      hp: 1,
+      atk: 1,
+      def: 1,
+      spa: 1,
+      spd: 1,
+      spe: known.baseSpeed,
+    },
+  }
+}
+
 type QuizDraftAnswer = {
   question: QuizQuestion
   answer: boolean
@@ -1229,15 +1291,15 @@ type QuizSummary = {
 const defaultMember = (slot: number): TeamMember => ({
   slot,
   pokemonId: slot === 1 ? 'garchomp' : `pokemon-${slot}`,
-  pokemonName: slot === 1 ? 'Garchomp' : '',
+  pokemonName: slot === 1 ? '한카리아스' : '',
   nationalDexNumber: slot === 1 ? 445 : null,
   imageAssets: slot === 1 ? imageAssetsFromDex(445) : null,
-  baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: 80 },
+  baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: slot === 1 ? 102 : 80 },
   level: 50,
   nature: 'Jolly',
   ability: null,
   item: null,
-  evs: { spe: 252 },
+  evs: {},
   ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
 })
 
@@ -1253,7 +1315,7 @@ function mockMember(slot: number, name: string, dex: number, baseSpeed: number):
     nature: 'Jolly',
     ability: null,
     item: null,
-    evs: { spe: 252 },
+    evs: {},
     ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
   }
 }
@@ -1761,6 +1823,62 @@ const statLabels: Array<[keyof TeamMember['baseStatsSnapshot'], string]> = [
   ['spe', '스피드'],
 ]
 
+const statAbbreviations: Record<keyof TeamMember['baseStatsSnapshot'], string> = {
+  hp: 'HP',
+  atk: 'ATK',
+  def: 'DEF',
+  spa: 'SPA',
+  spd: 'SPD',
+  spe: 'SPE',
+}
+
+type NatureOption = {
+  value: string
+  ko: string
+  up?: keyof TeamMember['baseStatsSnapshot']
+  down?: keyof TeamMember['baseStatsSnapshot']
+}
+
+const natureOptions: NatureOption[] = [
+  { value: 'Hardy', ko: '노력' },
+  { value: 'Lonely', ko: '외로움', up: 'atk', down: 'def' },
+  { value: 'Brave', ko: '용감', up: 'atk', down: 'spe' },
+  { value: 'Adamant', ko: '고집', up: 'atk', down: 'spa' },
+  { value: 'Naughty', ko: '개구쟁이', up: 'atk', down: 'spd' },
+  { value: 'Bold', ko: '대담', up: 'def', down: 'atk' },
+  { value: 'Docile', ko: '온순' },
+  { value: 'Relaxed', ko: '무사태평', up: 'def', down: 'spe' },
+  { value: 'Impish', ko: '장난꾸러기', up: 'def', down: 'spa' },
+  { value: 'Lax', ko: '촐랑', up: 'def', down: 'spd' },
+  { value: 'Timid', ko: '겁쟁이', up: 'spe', down: 'atk' },
+  { value: 'Hasty', ko: '성급', up: 'spe', down: 'def' },
+  { value: 'Serious', ko: '성실' },
+  { value: 'Jolly', ko: '명랑', up: 'spe', down: 'spa' },
+  { value: 'Naive', ko: '천진난만', up: 'spe', down: 'spd' },
+  { value: 'Modest', ko: '조심', up: 'spa', down: 'atk' },
+  { value: 'Mild', ko: '의젓', up: 'spa', down: 'def' },
+  { value: 'Quiet', ko: '냉정', up: 'spa', down: 'spe' },
+  { value: 'Bashful', ko: '수줍음' },
+  { value: 'Rash', ko: '덜렁', up: 'spa', down: 'spd' },
+  { value: 'Calm', ko: '차분', up: 'spd', down: 'atk' },
+  { value: 'Gentle', ko: '얌전', up: 'spd', down: 'def' },
+  { value: 'Sassy', ko: '건방', up: 'spd', down: 'spe' },
+  { value: 'Careful', ko: '신중', up: 'spd', down: 'spa' },
+  { value: 'Quirky', ko: '변덕' },
+]
+
+function natureLabel(option: NatureOption) {
+  if (!option.up || !option.down) return `${option.ko} (-)`
+  return `${option.ko} (${statAbbreviations[option.up]}+,${statAbbreviations[option.down]}-)`
+}
+
+function natureDelta(nature: string, stat: keyof TeamMember['baseStatsSnapshot']) {
+  const option = natureOptions.find((item) => item.value === nature)
+  if (option?.up === stat) return 10
+  if (option?.down === stat) return -10
+  return 0
+}
+
 function CreatePokemonScreen({
   member,
   onBack,
@@ -1781,7 +1899,7 @@ function CreatePokemonScreen({
     })
   }
 
-  const previewMember = member.pokemonName ? member : { ...member, pokemonName: 'Garchomp', nationalDexNumber: 445, imageAssets: imageAssetsFromDex(445) }
+  const previewMember = member.pokemonName ? member : { ...member, pokemonName: '한카리아스', nationalDexNumber: 445, imageAssets: imageAssetsFromDex(445) }
 
   return (
     <>
@@ -1805,7 +1923,7 @@ function CreatePokemonScreen({
           <FieldGroup>
             <FieldLabel>
               포켓몬
-              <TextField value={member.pokemonName} placeholder="예: Garchomp" onChange={(event) => onUpdate({ pokemonName: event.target.value, pokemonId: event.target.value.toLowerCase().replace(/\s+/g, '-') })} />
+              <TextField value={member.pokemonName} placeholder="예: 피카츄 / 리자몽" onChange={(event) => onUpdate(pokemonPatchFromName(event.target.value))} />
             </FieldLabel>
           </FieldGroup>
         </FormHero>
@@ -1841,7 +1959,11 @@ function CreatePokemonScreen({
         <TwoColumnFields>
           <FieldLabel>
             성격
-            <TextField value={member.nature} placeholder="Jolly" onChange={(event) => onUpdate({ nature: event.target.value })} />
+            <SelectField value={member.nature} onChange={(event) => onUpdate({ nature: event.target.value })}>
+              {natureOptions.map((option) => (
+                <option key={option.value} value={option.value}>{natureLabel(option)}</option>
+              ))}
+            </SelectField>
           </FieldLabel>
           <FieldLabel>
             National Dex
@@ -1859,7 +1981,7 @@ function CreatePokemonScreen({
         {statLabels.map(([stat, label]) => {
           const base = member.baseStatsSnapshot[stat]
           const ev = member.evs[stat] ?? 0
-          const natureBonus = stat === 'spe' ? 10 : 0
+          const natureBonus = natureDelta(member.nature, stat)
           const total = base + Math.floor(ev / 8) + natureBonus
           return (
             <StatRow key={stat}>
@@ -1882,7 +2004,7 @@ function CreatePokemonScreen({
                 </Slider>
                 <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.min(252, ev + 4))}>+</TinyRoundButton>
               </RangeWrap>
-              <span>+{natureBonus}</span>
+              <span>{natureBonus > 0 ? `+${natureBonus}` : natureBonus}</span>
               <strong>{total}</strong>
             </StatRow>
           )

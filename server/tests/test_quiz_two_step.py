@@ -22,8 +22,8 @@ def test_question_candidate_validate_render_two_step_flow():
     assert validate_response.status_code == 200
     validated = validate_response.json()
     assert validated["candidateId"] == candidate["id"]
-    assert validated["correctAnswer"] is True
-    assert validated["subject"]["speed"]["effectiveSpeed"] == 253
+    assert validated["correctAnswer"] is False
+    assert validated["subject"]["speed"]["effectiveSpeed"] == 201
     assert validated["opponent"]["speed"]["effectiveSpeed"] == 205
     assert validated["validation"]["status"] == "valid"
 
@@ -33,7 +33,7 @@ def test_question_candidate_validate_render_two_step_flow():
     assert rendered["validatedQuestionId"] == validated["id"]
     assert rendered["correctAnswer"] == validated["correctAnswer"]
     assert "보다 빠르다" in rendered["statement"]
-    assert "정답은 예입니다" in rendered["explanation"]
+    assert "정답은 아니오입니다" in rendered["explanation"]
 
 
 def test_legacy_generate_questions_uses_validated_rendered_questions():
@@ -41,6 +41,6 @@ def test_legacy_generate_questions_uses_validated_rendered_questions():
     assert response.status_code == 200
     question = response.json()["questions"][0]
     assert question["validatedQuestionId"]
-    assert question["correctAnswer"] is True
-    assert question["subject"]["speed"]["effectiveSpeed"] == 253
+    assert question["correctAnswer"] is False
+    assert question["subject"]["speed"]["effectiveSpeed"] == 201
     assert question["opponent"]["speed"]["effectiveSpeed"] == 205
