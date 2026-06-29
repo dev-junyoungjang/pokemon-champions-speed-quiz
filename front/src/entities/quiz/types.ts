@@ -8,6 +8,12 @@ export type DifficultyOption = {
   description: string
 }
 
+export type GenerateQuizRequest = {
+  difficulty: Difficulty
+  count?: number
+  teamName?: string
+}
+
 export type QuizQuestion = {
   id: string
   difficulty: Difficulty

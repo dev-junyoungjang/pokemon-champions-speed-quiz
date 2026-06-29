@@ -10,7 +10,7 @@ import type { TeamMember, UserTeam } from '../entities/team/types'
 
 const queryClient = new QueryClient()
 
-type ScreenName = 'entry' | 'difficulty' | 'quiz' | 'create' | 'complete' | 'review'
+type ScreenName = 'entry' | 'difficulty' | 'generating' | 'quiz' | 'create' | 'complete' | 'review'
 
 const Screen = styled.main`
   min-height: 100vh;
@@ -558,6 +558,186 @@ const LoadingLayer = styled.div`
   color: #7b8089;
   font-size: 13px;
   font-weight: 800;
+`
+
+const GeneratingWrap = styled.div`
+  position: relative;
+  display: grid;
+  min-height: calc(100% - 24px);
+  grid-template-rows: 1fr auto;
+  overflow: hidden;
+  border-radius: 0 0 24px 24px;
+  background:
+    radial-gradient(circle at 50% -6%, #e6f1fe 0, rgba(230, 241, 254, 0.58) 34%, rgba(250, 250, 250, 0) 58%),
+    #fafafa;
+`
+
+const GeneratingCenter = styled.div`
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 14px;
+  padding: 54px 0 32px;
+  text-align: center;
+`
+
+const PokeballLoader = styled.div`
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin-bottom: 12px;
+  border: 5px solid #111827;
+  border-radius: 999px;
+  background: linear-gradient(#ff1f63 0 48%, #111827 48% 55%, #ffffff 55% 100%);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+  animation: pokeballSpin 1.4s linear infinite;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 23px;
+    height: 23px;
+    border: 4px solid #111827;
+    border-radius: 999px;
+    background: #ffffff;
+    transform: translate(-50%, -50%);
+    box-shadow: inset 0 0 0 4px #dbe2ea;
+  }
+
+  @keyframes pokeballSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`
+
+const LoadingDots = styled.div`
+  display: flex;
+  gap: 5px;
+  margin-top: -7px;
+
+  span {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: #006fee;
+    animation: dotBlink 1.1s ease-in-out infinite;
+  }
+
+  span:nth-of-type(2) { animation-delay: 0.15s; }
+  span:nth-of-type(3) { animation-delay: 0.3s; }
+
+  @keyframes dotBlink {
+    0%, 80%, 100% { opacity: 0.28; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-3px); }
+  }
+`
+
+const GeneratingTitle = styled.h1`
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  line-height: 1.12;
+  font-weight: 1000;
+  letter-spacing: -0.06em;
+`
+
+const GeneratingCopy = styled.p`
+  max-width: 220px;
+  margin: -4px 0 0;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.45;
+`
+
+const IndeterminateTrack = styled.div`
+  position: relative;
+  width: 204px;
+  height: 4px;
+  margin: 2px 0 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -45%;
+    width: 45%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(0, 111, 238, 0), #006fee 45%, rgba(0, 111, 238, 0));
+    animation: progressSlide 1.3s ease-in-out infinite;
+  }
+
+  @keyframes progressSlide {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(330%); }
+  }
+`
+
+const LoadingChecklist = styled.div`
+  display: grid;
+  gap: 12px;
+  width: 230px;
+  margin-top: 4px;
+  text-align: left;
+`
+
+const LoadingStep = styled.div<{ state: 'done' | 'active' | 'pending' }>`
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+  gap: 9px;
+  color: ${({ state }) => (state === 'active' ? '#006fee' : state === 'done' ? '#374151' : '#9ca3af')};
+  font-size: 11px;
+  font-weight: 900;
+`
+
+const StepIcon = styled.span<{ state: 'done' | 'active' | 'pending' }>`
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 999px;
+  border: 1.5px solid ${({ state }) => (state === 'done' ? '#17c964' : state === 'active' ? '#006fee' : '#d1d5db')};
+  background: ${({ state }) => (state === 'done' ? '#17c964' : 'transparent')};
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 1;
+
+  ${({ state }) => state === 'active' ? `
+    border-top-color: transparent;
+    animation: stepSpin 0.8s linear infinite;
+
+    @keyframes stepSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  ` : ''}
+`
+
+const GeneratingFooter = styled.div`
+  padding: 0 28px 8px;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+`
+
+const GeneratingError = styled.div`
+  width: 230px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 61, 117, 0.09);
+  color: #be123c;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.45;
 `
 
 const ConfettiLayer = styled.div`
@@ -1305,6 +1485,51 @@ function DifficultyScreen({
   )
 }
 
+function GeneratingQuizScreen({
+  difficulty,
+  isError,
+  onBack,
+  onRetry,
+}: {
+  difficulty: Difficulty | null
+  isError: boolean
+  onBack: () => void
+  onRetry: () => void
+}) {
+  const label = difficulty ? difficultyTitle({ id: difficulty, label: difficulty, description: '' }) : '선택한 난이도'
+  return (
+    <GeneratingWrap>
+      <GeneratingCenter>
+        <PokeballLoader aria-label="퀴즈 생성 중" />
+        <LoadingDots aria-hidden="true"><span /><span /><span /></LoadingDots>
+        <GeneratingTitle>퀴즈 만드는 중</GeneratingTitle>
+        <GeneratingCopy>
+          내 엔트리와 메타 포켓몬을 비교해<br />최적의 문제를 생성하고 있어요
+        </GeneratingCopy>
+        <IndeterminateTrack aria-hidden="true" />
+        <LoadingChecklist>
+          <LoadingStep state="done"><StepIcon state="done">✓</StepIcon><span>메타 포켓몬 불러오는 중</span></LoadingStep>
+          <LoadingStep state="done"><StepIcon state="done">✓</StepIcon><span>스피드 공식 계산 중</span></LoadingStep>
+          <LoadingStep state="active"><StepIcon state="active" /><span>문제 만드는 중 · {label}</span></LoadingStep>
+          <LoadingStep state="pending"><StepIcon state="pending" /><span>정답 · 해설 준비 중</span></LoadingStep>
+        </LoadingChecklist>
+        {isError && (
+          <GeneratingError>
+            문제 생성에 실패했어요. 서버 상태를 확인하거나 다시 시도해 주세요.
+          </GeneratingError>
+        )}
+        {isError && <Button variant="primary" onPress={onRetry}>다시 생성하기</Button>}
+      </GeneratingCenter>
+
+      <GeneratingFooter>
+        {isError ? '난이도 선택으로 돌아가려면 뒤로 가기를 눌러 주세요' : '잠시만 기다려 주세요 · 보통 몇 초면 끝나요'}
+        <br />
+        {!isError && <button type="button" onClick={onBack} style={{ marginTop: 6, border: 0, background: 'transparent', color: '#9ca3af', font: 'inherit', cursor: 'pointer' }}>난이도 다시 선택</button>}
+      </GeneratingFooter>
+    </GeneratingWrap>
+  )
+}
+
 function QuizScreen({
   difficulty,
   currentQuestion,
@@ -1674,6 +1899,7 @@ function CreatePokemonScreen({
 function AppContent() {
   const [screen, setScreen] = useState<ScreenName>(() => {
     if (globalThis.location?.hash === '#create') return 'create'
+    if (globalThis.location?.hash === '#generating') return 'generating'
     if (globalThis.location?.hash === '#quiz') return 'quiz'
     if (globalThis.location?.hash === '#complete') return 'complete'
     if (globalThis.location?.hash === '#review') return 'review'
@@ -1735,6 +1961,8 @@ function AppContent() {
     setSelectedDifficulty(difficulty)
     setQuizAnswers([])
     setQuestionIndex(0)
+    setQuestions([])
+    setScreen('generating')
     generateQuiz.mutate(difficulty)
   }
 
@@ -1776,6 +2004,14 @@ function AppContent() {
               onBack={() => setScreen('entry')}
               onSelect={setSelectedDifficulty}
               onStart={() => startQuiz(selectedDifficulty ?? 'easy')}
+            />
+          )}
+          {screen === 'generating' && (
+            <GeneratingQuizScreen
+              difficulty={selectedDifficulty}
+              isError={generateQuiz.isError}
+              onBack={() => setScreen('difficulty')}
+              onRetry={() => startQuiz(selectedDifficulty ?? 'easy')}
             />
           )}
           {screen === 'quiz' && (
