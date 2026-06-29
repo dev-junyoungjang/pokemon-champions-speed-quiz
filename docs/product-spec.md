@@ -14,6 +14,8 @@ Build a Pokémon Champions rules-based speed comparison quiz web app. The first 
 - Swipe right means yes/true; swipe left means no/false.
 - Server computes the authoritative answer using a deterministic speed rules engine.
 - Model-generated text may be added later, but must not override server-computed answers.
+- AI-generated question candidates must be structured JSON only; the server validates candidates with the rules engine before rendering text.
+- Text rendering is a separate step from candidate validation so statements/explanations can be regenerated without changing the trusted answer.
 - Meta samples and user team records include `baseStatsSnapshot` for reproducible speed calculations.
 - Tailwind must not be used.
 
@@ -28,7 +30,7 @@ Build a Pokémon Champions rules-based speed comparison quiz web app. The first 
 ## Acceptance criteria
 
 - `server` has passing tests for base speed and level 50 speed calculations.
-- `server` exposes health, team save/get, difficulty list, question generation, and answer submission APIs.
+- `server` exposes health, team save/get, difficulty list, candidate generation, candidate validation, question rendering, legacy question generation, and answer submission APIs.
 - `front` builds successfully with Vite.
 - UI includes home, team editor, difficulty selection, generation waiting state, and swipe quiz card.
 - No Tailwind dependency or utility-heavy class markup is used.

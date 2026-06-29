@@ -27,6 +27,35 @@ Regenerate roster exports with:
 python server/scripts/crawl_regulation_mb.py
 ```
 
+### AI configuration
+
+For local GPT/OpenAI-compatible calls, copy the example env file and put your token in `.env`:
+
+```bash
+cd server
+cp .env.example .env
+# edit OPENAI_API_KEY in .env
+```
+
+Recommended defaults for this app:
+
+- `OPENAI_CANDIDATE_MODEL=gpt-5.4-mini` for structured candidate JSON generation.
+- `OPENAI_RENDER_MODEL=gpt-5.4-mini` for Korean question/explanation rendering.
+- If cost becomes more important than phrasing quality, use a smaller mini/nano-class model for rendering only.
+- If candidate validity is poor, upgrade only `OPENAI_CANDIDATE_MODEL` to a stronger non-mini model and keep rendering on mini.
+
+The frontend should still call only `POST /api/v1/quiz/questions`. Model calls, validation, retry, and rendering stay server-side.
+
+### Question generation pipeline
+
+The server supports a two-step question pipeline so AI can assist without deciding trusted answers:
+
+1. `POST /api/v1/quiz/question-candidates` creates structured candidate JSON with Pokémon/build inputs only.
+2. `POST /api/v1/quiz/questions/validate` recomputes speeds and `correctAnswer` with the server rules engine.
+3. `POST /api/v1/quiz/questions/render` converts validated JSON into user-facing statement/explanation text.
+
+`POST /api/v1/quiz/questions` remains as a compatibility endpoint that performs all three steps internally and returns rendered questions.
+
 ## Local development
 
 ### Server

@@ -126,8 +126,48 @@ class QuizPokemonCase(BaseModel):
     speed: SpeedComputation
 
 
+class QuizQuestionCandidate(BaseModel):
+    """AI- or server-generated structured question candidate.
+
+    Candidates intentionally contain no trusted answer, speed value, statement,
+    or explanation. The server validates and computes those from the rules engine.
+    """
+
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    difficulty: Difficulty
+    mode: Literal["IS_FASTER"] = "IS_FASTER"
+    subject: PokemonBuild
+    opponent: PokemonBuild
+    ruleset_version: str = Field(default="pokemon_champions:speed:v1", alias="rulesetVersion")
+
+    model_config = {"populate_by_name": True}
+
+
+class ValidatedQuizQuestion(BaseModel):
+    """Rules-engine result for a candidate, still independent from prose."""
+
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    candidate_id: str = Field(alias="candidateId")
+    difficulty: Difficulty
+    mode: Literal["IS_FASTER"] = "IS_FASTER"
+    answer_type: Literal["YES_NO"] = Field(default="YES_NO", alias="answerType")
+    correct_answer: bool = Field(alias="correctAnswer")
+    subject: QuizPokemonCase
+    opponent: QuizPokemonCase
+    validation: dict[str, object]
+    ruleset_version: str = Field(default="pokemon_champions:speed:v1", alias="rulesetVersion")
+
+    model_config = {"populate_by_name": True}
+
+
+class RenderQuestionRequest(BaseModel):
+    question: ValidatedQuizQuestion
+    locale: Literal["ko", "en"] = "ko"
+
+
 class QuizQuestion(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
+    validated_question_id: str | None = Field(default=None, alias="validatedQuestionId")
     difficulty: Difficulty
     mode: Literal["IS_FASTER"] = "IS_FASTER"
     statement: str
@@ -136,7 +176,7 @@ class QuizQuestion(BaseModel):
     subject: QuizPokemonCase
     opponent: QuizPokemonCase
     explanation: str
-    ruleset_version: str = Field(default="pokemon_champions:v0-mainline-speed", alias="rulesetVersion")
+    ruleset_version: str = Field(default="pokemon_champions:speed:v1", alias="rulesetVersion")
 
     model_config = {"populate_by_name": True}
 

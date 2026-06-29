@@ -3,7 +3,17 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.models.domain import AnswerRequest, AnswerResult, Difficulty, GenerateQuizRequest, UserTeam
+from app.core.settings import get_settings
+from app.models.domain import (
+    AnswerRequest,
+    AnswerResult,
+    Difficulty,
+    GenerateQuizRequest,
+    QuizQuestionCandidate,
+    RenderQuestionRequest,
+    UserTeam,
+    ValidatedQuizQuestion,
+)
 from app.repositories.in_memory import InMemoryRepository
 from app.services.quiz_service import QuizService
 
@@ -32,6 +42,20 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/v1/ai/config")
+def ai_config() -> dict[str, object]:
+    settings = get_settings()
+    return {
+        "openaiConfigured": settings.openai_configured,
+        "candidateModel": settings.openai_candidate_model,
+        "renderModel": settings.openai_render_model,
+        "questionGenerationEnabled": settings.ai_question_generation_enabled,
+        "questionRenderingEnabled": settings.ai_question_rendering_enabled,
+        "candidateBatchMultiplier": settings.ai_candidate_batch_multiplier,
+        "maxGenerationAttempts": settings.ai_max_generation_attempts,
+    }
+
+
 @app.get("/api/v1/difficulties")
 def difficulties() -> list[dict[str, str]]:
     return [
@@ -51,6 +75,23 @@ def get_my_team() -> UserTeam:
 @app.put("/api/v1/teams/me", response_model=UserTeam)
 def save_my_team(team: UserTeam) -> UserTeam:
     return repository.save_team(team)
+
+
+@app.post("/api/v1/quiz/question-candidates")
+def generate_question_candidates(request: GenerateQuizRequest) -> dict[str, object]:
+    candidates = quiz_service.generate_candidates(request)
+    return {"candidates": candidates}
+
+
+@app.post("/api/v1/quiz/questions/validate", response_model=ValidatedQuizQuestion)
+def validate_question_candidate(candidate: QuizQuestionCandidate) -> ValidatedQuizQuestion:
+    return quiz_service.validate_candidate(candidate)
+
+
+@app.post("/api/v1/quiz/questions/render")
+def render_question(request: RenderQuestionRequest) -> dict[str, object]:
+    question = quiz_service.render_question(request)
+    return {"question": question}
 
 
 @app.post("/api/v1/quiz/questions")
