@@ -71,6 +71,22 @@ class PokemonImageAssets(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class PokemonSpecies(BaseModel):
+    pokemon_id: str = Field(alias="pokemonId")
+    name_en: str = Field(alias="nameEn")
+    name_ko: str = Field(alias="nameKo")
+    species_id: str = Field(alias="speciesId")
+    species_name_en: str = Field(alias="speciesNameEn")
+    species_name_ko: str = Field(alias="speciesNameKo")
+    national_dex_number: int = Field(alias="nationalDexNumber")
+    pokemon_champions_code: str = Field(alias="pokemonChampionsCode")
+    base_stats: BaseStats = Field(alias="baseStats")
+    image_assets: PokemonImageAssets = Field(alias="imageAssets")
+    types: list[str] = Field(default_factory=list)
+
+    model_config = {"populate_by_name": True}
+
+
 class PokemonBuild(BaseModel):
     pokemon_id: str = Field(alias="pokemonId")
     pokemon_name: str = Field(alias="pokemonName")

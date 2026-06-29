@@ -2,11 +2,11 @@ import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tansta
 import { Button, Chip, Slider, Spinner } from '@heroui/react'
 import styled from '@emotion/styled'
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { api } from '../shared/api/client'
 import type { Difficulty, DifficultyOption, QuizQuestion } from '../entities/quiz/types'
-import type { TeamMember, UserTeam } from '../entities/team/types'
+import type { PokemonSpecies, TeamMember, UserTeam } from '../entities/team/types'
 
 const queryClient = new QueryClient()
 
@@ -1223,6 +1223,16 @@ function pokemonPatchFromName(value: string): Partial<TeamMember> {
   }
 }
 
+function pokemonPatchFromSpecies(species: PokemonSpecies): Partial<TeamMember> {
+  return {
+    pokemonId: species.pokemonId,
+    pokemonName: species.nameKo,
+    nationalDexNumber: species.nationalDexNumber,
+    imageAssets: species.imageAssets,
+    baseStatsSnapshot: species.baseStats,
+  }
+}
+
 type QuizDraftAnswer = {
   question: QuizQuestion
   answer: boolean
@@ -1845,6 +1855,28 @@ function CreatePokemonScreen({
       imageAssets: value > 0 ? imageAssetsFromDex(value) : null,
     })
   }
+
+  const pokemonLookupQuery = useMemo(() => member.pokemonName.trim(), [member.pokemonName])
+
+  useEffect(() => {
+    if (!pokemonLookupQuery) return undefined
+
+    let cancelled = false
+    const timeoutId = window.setTimeout(() => {
+      api.getPokemonSpecies(pokemonLookupQuery)
+        .then(({ species }) => {
+          if (!cancelled) onUpdate(pokemonPatchFromSpecies(species))
+        })
+        .catch(() => {
+          // Unknown/incomplete names are allowed while the user is typing.
+        })
+    }, 250)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+    }
+  }, [pokemonLookupQuery])
 
   const previewMember = member.pokemonName ? member : { ...member, pokemonName: '한카리아스', nationalDexNumber: 445, imageAssets: imageAssetsFromDex(445) }
 

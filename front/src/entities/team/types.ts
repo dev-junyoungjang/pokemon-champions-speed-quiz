@@ -40,6 +40,20 @@ export type TeamMember = {
   itemConsumed?: boolean
 }
 
+export type PokemonSpecies = {
+  pokemonId: string
+  nameEn: string
+  nameKo: string
+  speciesId: string
+  speciesNameEn: string
+  speciesNameKo: string
+  nationalDexNumber: number
+  pokemonChampionsCode: string
+  baseStats: BaseStats
+  imageAssets: PokemonImageAssets
+  types: string[]
+}
+
 export type UserTeam = {
   teamName: string
   format: string

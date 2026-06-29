@@ -1,5 +1,5 @@
 import type { AnswerResult, Difficulty, DifficultyOption, GenerateQuizRequest, QuizQuestion } from '../../entities/quiz/types'
-import type { UserTeam } from '../../entities/team/types'
+import type { PokemonSpecies, UserTeam } from '../../entities/team/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
@@ -26,6 +26,7 @@ export const api = {
   saveTeam: (team: UserTeam) =>
     request<UserTeam>('/api/v1/teams/me', { method: 'PUT', body: JSON.stringify(team) }),
   getDifficulties: () => request<DifficultyOption[]>('/api/v1/difficulties'),
+  getPokemonSpecies: (query: string) => request<{ species: PokemonSpecies }>(`/api/v1/pokemon/species?query=${encodeURIComponent(query)}`),
   generateQuestions: (input: Difficulty | GenerateQuizRequest) => {
     const request = typeof input === 'string'
       ? { difficulty: input, count: 5, teamName: 'main' }

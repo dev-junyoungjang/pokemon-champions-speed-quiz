@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.settings import get_settings
@@ -15,6 +15,7 @@ from app.models.domain import (
     ValidatedQuizQuestion,
 )
 from app.repositories.in_memory import InMemoryRepository
+from app.repositories.pokemon_species import get_species_by_query, list_species
 from app.services.quiz_service import QuizService
 
 repository = InMemoryRepository()
@@ -65,6 +66,17 @@ def difficulties() -> list[dict[str, str]]:
         {"id": Difficulty.expert, "label": "Expert", "description": "Weather and abilities"},
         {"id": Difficulty.master, "label": "Master", "description": "Mixed battle conditions"},
     ]
+
+
+@app.get("/api/v1/pokemon/species")
+def pokemon_species(query: str | None = Query(default=None, min_length=1)) -> dict[str, object]:
+    if query is not None:
+        species = get_species_by_query(query)
+        if species is None:
+            raise HTTPException(status_code=404, detail="Pokemon species not found")
+        return {"species": species.model_dump(by_alias=True)}
+
+    return {"species": [species.model_dump(by_alias=True) for species in list_species()]}
 
 
 @app.get("/api/v1/teams/me", response_model=UserTeam)
