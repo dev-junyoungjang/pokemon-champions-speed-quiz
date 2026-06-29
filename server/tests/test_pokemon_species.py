@@ -1,6 +1,11 @@
+import os
+
+os.environ.setdefault("POKEMON_SPECIES_SOURCE", "local")
+
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.repositories import pokemon_species
 
 
 client = TestClient(app)
@@ -35,3 +40,45 @@ def test_pokemon_species_lookup_returns_404_for_unknown_name() -> None:
     response = client.get("/api/v1/pokemon/species", params={"query": "not-a-pokemon"})
 
     assert response.status_code == 404
+
+
+def test_dynamodb_species_loader_reads_pokemon_species_table(monkeypatch) -> None:
+    pokemon_species.load_dynamodb_regulation_species.cache_clear()
+    item = {
+        "pk": pokemon_species.REGULATION_SPECIES_PK,
+        "sk": "POKEMON#pikachu",
+        "pokemonId": "pikachu",
+        "nameEn": "Pikachu",
+        "nameKo": "피카츄",
+        "speciesId": "pikachu",
+        "speciesNameEn": "Pikachu",
+        "speciesNameKo": "피카츄",
+        "nationalDexNumber": 25,
+        "pokemonChampionsCode": "0025-000",
+        "baseStats": {"hp": 35, "atk": 55, "def": 40, "spa": 50, "spd": 50, "spe": 90},
+        "imageAssets": {
+            "primaryArtworkUrl": "https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png",
+            "fallbackArtworkUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+            "spriteUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+        },
+        "types": ["electric"],
+    }
+
+    class FakeTable:
+        def query(self, **kwargs):
+            assert kwargs["KeyConditionExpression"] is not None
+            return {"Items": [item]}
+
+    class FakeDynamodb:
+        def Table(self, table_name: str):
+            assert table_name == "pokemon-species"
+            return FakeTable()
+
+    monkeypatch.setattr(pokemon_species.boto3, "resource", lambda *args, **kwargs: FakeDynamodb())
+
+    species = pokemon_species.load_dynamodb_regulation_species("pokemon-species", "ap-northeast-2")
+
+    assert len(species) == 1
+    assert species[0].pokemon_id == "pikachu"
+    assert species[0].name_ko == "피카츄"
+    assert species[0].available_moves[0].move_id == "thunderbolt"

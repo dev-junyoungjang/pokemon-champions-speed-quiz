@@ -24,6 +24,9 @@ class Settings:
     ai_timeout_seconds: float
     ai_candidate_batch_multiplier: int
     ai_max_generation_attempts: int
+    aws_region: str
+    pokemon_species_source: str
+    pokemon_species_table_name: str
 
     @property
     def openai_configured(self) -> bool:
@@ -70,4 +73,7 @@ def get_settings() -> Settings:
         ai_timeout_seconds=_float_env("AI_TIMEOUT_SECONDS", 30.0),
         ai_candidate_batch_multiplier=max(1, _int_env("AI_CANDIDATE_BATCH_MULTIPLIER", 2)),
         ai_max_generation_attempts=max(1, _int_env("AI_MAX_GENERATION_ATTEMPTS", 3)),
+        aws_region=os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "ap-northeast-2")),
+        pokemon_species_source=os.getenv("POKEMON_SPECIES_SOURCE", "dynamodb").strip().lower(),
+        pokemon_species_table_name=os.getenv("POKEMON_SPECIES_TABLE_NAME", "pokemon-species"),
     )
