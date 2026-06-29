@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
-import { Button, Chip, Slider, Spinner } from '@heroui/react'
+import { Button, Chip, Spinner } from '@heroui/react'
 import styled from '@emotion/styled'
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
@@ -990,10 +990,21 @@ const CreateScroll = styled.div`
 
 const FormHero = styled.div`
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr) 54px;
   gap: 9px;
   align-items: end;
   margin-bottom: 6px;
+`
+
+const RemainingEv = styled.div`
+  margin: 2px 0 8px;
+  color: #8a929d;
+  font-size: 11px;
+  font-weight: 800;
+
+  strong {
+    color: #111827;
+  }
 `
 
 const PreviewTile = styled.div`
@@ -1140,25 +1151,45 @@ const StatValue = styled.span`
 const RangeWrap = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+`
 
-  [data-slot='slider'] {
-    flex: 1;
-    min-width: 0;
-  }
+// 네이티브 range: 끝단(0=왼쪽, 32=오른쪽)이 브라우저 기본대로 딱 맞음
+const EvRange = styled.input`
+  flex: 1;
+  min-width: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: #e6e8ec;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  cursor: pointer;
 
-  [data-slot='slider-track'] {
-    height: 6px;
-    border-radius: 999px;
-  }
-
-  [data-slot='slider-fill'] {
-    background: #0b7bf3;
-  }
-
-  [data-slot='slider-thumb'] {
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
     width: 14px;
     height: 14px;
+    border-radius: 50%;
+    background: #f97316;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
+  }
+
+  &::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: #e6e8ec;
+  }
+
+  &::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    border-radius: 50%;
+    background: #f97316;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
   }
 `
 
@@ -1864,11 +1895,23 @@ function natureLabel(option: NatureOption) {
   return `${option.ko} (${statAbbreviations[option.up]}+,${statAbbreviations[option.down]}-)`
 }
 
-function natureDelta(nature: string, stat: keyof TeamMember['baseStatsSnapshot']) {
+// Pokémon Champions 룰: 엔트리 1마리당 노력치(EV) 총량 한도
+const EV_BUDGET = 66
+
+type StatKey = keyof TeamMember['baseStatsSnapshot']
+
+function natureMultiplier(nature: string, stat: StatKey) {
   const option = natureOptions.find((item) => item.value === nature)
-  if (option?.up === stat) return 10
-  if (option?.down === stat) return -10
-  return 0
+  if (option?.up === stat) return 1.1
+  if (option?.down === stat) return 0.9
+  return 1.0
+}
+
+// Lv50 실효 스탯 (개체값 IV, 노력치 EV, 성격 배율 반영)
+function lv50Stat(stat: StatKey, base: number, ev: number, iv: number, nature: string) {
+  const core = Math.floor((2 * base + iv + Math.floor(ev / 4)) * 50 / 100)
+  if (stat === 'hp') return core + 50 + 10
+  return Math.floor((core + 5) * natureMultiplier(nature, stat))
 }
 
 function CreatePokemonScreen({
@@ -1882,13 +1925,6 @@ function CreatePokemonScreen({
 }) {
   function updateEv(stat: keyof TeamMember['evs'], value: number) {
     onUpdate({ evs: { ...member.evs, [stat]: value } })
-  }
-
-  function updateDex(value: number) {
-    onUpdate({
-      nationalDexNumber: value,
-      imageAssets: value > 0 ? imageAssetsFromDex(value) : null,
-    })
   }
 
   function updateMove(index: number, moveId: string) {
@@ -1922,13 +1958,14 @@ function CreatePokemonScreen({
   const previewMember = member.pokemonName ? member : { ...member, pokemonName: '한카리아스', nationalDexNumber: 445, imageAssets: imageAssetsFromDex(445) }
   const displayTypes = member.speciesTypes?.length ? member.speciesTypes : []
   const availableMoves = member.availableMoves ?? []
+  const usedEv = statLabels.reduce((sum, [stat]) => sum + (member.evs[stat] ?? 0), 0)
+  const remainingEv = EV_BUDGET - usedEv
 
   return (
     <>
       <Header>
         <HeaderCopy>
           <PageTitle>포켓몬 만들기</PageTitle>
-          <PageSubtitle>엔트리에 저장할 실전 샘플</PageSubtitle>
         </HeaderCopy>
         <IconButton onClick={onBack}>×</IconButton>
       </Header>
@@ -1948,6 +1985,17 @@ function CreatePokemonScreen({
               <TextField value={member.pokemonName} placeholder="예: 피카츄 / 리자몽" onChange={(event) => onUpdate(pokemonPatchFromName(event.target.value))} />
             </FieldLabel>
           </FieldGroup>
+          <FieldLabel>
+            Lv
+            <TextField
+              type="number"
+              min={1}
+              max={100}
+              value={member.level}
+              onChange={(event) => onUpdate({ level: Math.min(100, Math.max(1, Number(event.target.value) || 1)) })}
+              style={{ textAlign: 'center', padding: '0 6px' }}
+            />
+          </FieldLabel>
         </FormHero>
 
         <TypeChipRow>
@@ -1989,7 +2037,7 @@ function CreatePokemonScreen({
           </FieldLabel>
         </FullField>
 
-        <TwoColumnFields>
+        <FullField>
           <FieldLabel>
             성격
             <SelectField value={member.nature} onChange={(event) => onUpdate({ nature: event.target.value })}>
@@ -1998,11 +2046,7 @@ function CreatePokemonScreen({
               ))}
             </SelectField>
           </FieldLabel>
-          <FieldLabel>
-            National Dex
-            <TextField type="number" value={member.nationalDexNumber ?? ''} placeholder="445" onChange={(event) => updateDex(Number(event.target.value))} />
-          </FieldLabel>
-        </TwoColumnFields>
+        </FullField>
 
         <StatHeader>
           <span>스탯</span>
@@ -2011,33 +2055,31 @@ function CreatePokemonScreen({
           <span>성격</span>
           <span>합계</span>
         </StatHeader>
+        <RemainingEv>남은 노력치 <strong>{remainingEv} / {EV_BUDGET}</strong></RemainingEv>
         {statLabels.map(([stat, label]) => {
           const base = member.baseStatsSnapshot[stat]
           const ev = member.evs[stat] ?? 0
-          const natureBonus = natureDelta(member.nature, stat)
-          const total = base + Math.floor(ev / 8) + natureBonus
+          const iv = member.ivs?.[stat] ?? 31
+          const mult = natureMultiplier(member.nature, stat)
+          const total = lv50Stat(stat, base, ev, iv, member.nature)
           return (
             <StatRow key={stat}>
               <span>{label}</span>
               <StatValue>{base}</StatValue>
               <RangeWrap>
                 <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.max(0, ev - 4))}>−</TinyRoundButton>
-                <Slider
+                <EvRange
+                  type="range"
                   aria-label={`${label} EV`}
-                  minValue={0}
-                  maxValue={252}
+                  min={0}
+                  max={32}
                   step={4}
                   value={ev}
-                  onChange={(value) => updateEv(stat, Array.isArray(value) ? value[0] : value)}
-                >
-                  <Slider.Track>
-                    <Slider.Fill />
-                    <Slider.Thumb />
-                  </Slider.Track>
-                </Slider>
-                <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.min(252, ev + 4))}>+</TinyRoundButton>
+                  onChange={(event) => updateEv(stat, Number(event.target.value))}
+                />
+                <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.min(32, ev + 4))}>+</TinyRoundButton>
               </RangeWrap>
-              <span>{natureBonus > 0 ? `+${natureBonus}` : natureBonus}</span>
+              <span>×{mult.toFixed(1)}</span>
               <strong>{total}</strong>
             </StatRow>
           )
