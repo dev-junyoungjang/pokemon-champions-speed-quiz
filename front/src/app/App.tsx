@@ -364,8 +364,8 @@ const SwipeGradient = styled(motion.div)<{ tone: 'yes' | 'no' }>`
   border-radius: inherit;
   background: ${({ tone }) =>
     tone === 'yes'
-      ? 'linear-gradient(235deg, rgba(23,201,100,0.30), rgba(23,201,100,0.06) 45%, rgba(255,255,255,0) 76%)'
-      : 'linear-gradient(125deg, rgba(243,18,96,0.30), rgba(243,18,96,0.06) 45%, rgba(255,255,255,0) 76%)'};
+      ? 'linear-gradient(235deg, rgba(255,61,117,0.30), rgba(255,61,117,0.06) 45%, rgba(255,255,255,0) 76%)'
+      : 'linear-gradient(125deg, rgba(11,123,243,0.30), rgba(11,123,243,0.06) 45%, rgba(255,255,255,0) 76%)'};
   pointer-events: none;
 `
 
@@ -378,9 +378,9 @@ const SwipeStamp = styled(motion.div)<{ tone: 'yes' | 'no' }>`
   place-items: center;
   min-width: 62px;
   height: 32px;
-  border: 2px solid ${({ tone }) => (tone === 'yes' ? '#17C964' : '#F31260')};
+  border: 2px solid ${({ tone }) => (tone === 'yes' ? '#ff3d75' : '#0b7bf3')};
   border-radius: 999px;
-  color: ${({ tone }) => (tone === 'yes' ? '#17C964' : '#F31260')};
+  color: ${({ tone }) => (tone === 'yes' ? '#ff3d75' : '#0b7bf3')};
   background: rgba(255, 255, 255, 0.82);
   font-size: 13px;
   font-weight: 1000;
@@ -503,11 +503,11 @@ const SwipeActions = styled.div`
   }
 
   .no {
-    color: #ff3d75;
+    color: #0b7bf3;
   }
 
   .yes {
-    color: #22c55e;
+    color: #ff3d75;
   }
 `
 
@@ -853,13 +853,6 @@ const CompleteActions = styled.div`
     border-radius: 13px;
     font-weight: 900;
   }
-`
-
-const SoundButton = styled.button`
-  border: 1px solid #e4e4e7;
-  background: #ffffff;
-  color: #3f3f46;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
 `
 
 const ReviewScroll = styled.div`
@@ -1615,8 +1608,8 @@ function QuizScreen({
       </QuizTop>
 
       <QuizPrompt>
-        <QuizTitle>{currentQuestion?.statement ?? '내 포켓몬이 메타 샘플보다 빠를까?'}</QuizTitle>
-        <QuizHint>속도 수치는 숨기기 있어요 · 왼/오른 판단</QuizHint>
+        <QuizTitle>더 빠른 쪽으로 넘기세요</QuizTitle>
+        <QuizHint>왼쪽이 빠르면 왼쪽으로, 오른쪽이 빠르면 오른쪽으로 스와이프</QuizHint>
       </QuizPrompt>
 
       {isLoading && (
@@ -1637,11 +1630,12 @@ function QuizScreen({
             dragElastic={0.16}
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={(_, info) => {
-              if (info.offset.x > 100) {
+              // Swipe toward the faster Pokémon: left = MY (subject) faster, right = META (opponent) faster.
+              if (info.offset.x < -100) {
                 onAnswer(true)
                 return
               }
-              if (info.offset.x < -100) {
+              if (info.offset.x > 100) {
                 onAnswer(false)
               }
             }}
@@ -1651,8 +1645,8 @@ function QuizScreen({
           >
             <SwipeGradient tone="no" style={{ opacity: noOpacity }} />
             <SwipeGradient tone="yes" style={{ opacity: yesOpacity }} />
-            <SwipeStamp tone="no" style={{ opacity: noOpacity, scale: noScale }}>아니오 ✕</SwipeStamp>
-            <SwipeStamp tone="yes" style={{ opacity: yesOpacity, scale: yesScale }}>예 ✓</SwipeStamp>
+            <SwipeStamp tone="no" style={{ opacity: noOpacity, scale: noScale }}>⬅ 더 빠름</SwipeStamp>
+            <SwipeStamp tone="yes" style={{ opacity: yesOpacity, scale: yesScale }}>더 빠름 ➡</SwipeStamp>
             <QuizCardInner>
             <VersusArea>
               <QuizSide>
@@ -1689,8 +1683,8 @@ function QuizScreen({
 
 
       <SwipeActions>
-        <button className="no" onClick={() => onAnswer(false)}>← 아니오</button>
-        <button className="yes" onClick={() => onAnswer(true)}>예 →</button>
+        <button className="no" onClick={() => onAnswer(true)}>← 왼쪽이 빠름</button>
+        <button className="yes" onClick={() => onAnswer(false)}>오른쪽이 빠름 →</button>
       </SwipeActions>
     </>
   )
@@ -1722,6 +1716,11 @@ function CompleteScreen({ answers, mascot, onReview, onHome }: { answers: QuizDr
   const mascotSrc = animatedSpriteUrl(mascot) ?? artworkUrl(mascot) ?? undefined
   const mascotName = mascot.pokemonName || '포켓몬'
 
+  // Play the completion chime once when the screen appears.
+  useEffect(() => {
+    playChime()
+  }, [])
+
   return (
     <CompleteWrap>
       <ConfettiLayer aria-hidden="true">
@@ -1749,7 +1748,6 @@ function CompleteScreen({ answers, mascot, onReview, onHome }: { answers: QuizDr
         </SummaryGrid>
       </CompleteCenter>
       <CompleteActions>
-        <SoundButton type="button" onClick={playChime}>🔊 완료 효과음 듣기</SoundButton>
         <Button variant="primary" onPress={summary.total ? onReview : onHome}>{summary.total ? '정답 & 해설 보기' : '홈으로'}</Button>
       </CompleteActions>
     </CompleteWrap>
