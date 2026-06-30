@@ -16,9 +16,22 @@ from app.models.domain import (
 )
 from app.repositories.in_memory import InMemoryRepository
 from app.repositories.pokemon_species import get_species_by_query, list_species
+from app.repositories.user_pokemon_data import UserPokemonDataRepository
 from app.services.quiz_service import QuizService
 
-repository = InMemoryRepository()
+
+def build_repository() -> InMemoryRepository:
+    settings = get_settings()
+    if settings.user_pokemon_data_source == "dynamodb":
+        return UserPokemonDataRepository(
+            table_name=settings.user_pokemon_data_table_name,
+            region_name=settings.aws_region,
+            user_id=settings.user_pokemon_data_user_id,
+        )
+    return InMemoryRepository()
+
+
+repository = build_repository()
 quiz_service = QuizService(repository)
 
 app = FastAPI(title="Pokémon Champions Speed Quiz API", version="0.1.0")

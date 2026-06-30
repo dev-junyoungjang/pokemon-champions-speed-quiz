@@ -11,7 +11,7 @@ import boto3
 
 DEFAULT_TABLE_NAME = "pokemon-options"
 DEFAULT_REGION = "ap-northeast-2"
-DEFAULT_OPTIONS_FILE = Path(__file__).resolve().parents[1] / "data" / "curated" / "pokemon_battle_options_sample.json"
+DEFAULT_OPTIONS_FILE = Path(__file__).resolve().parents[1] / "data" / "curated" / "pokemon_battle_options_regulation_m_b.json"
 
 
 def json_to_dynamodb_value(value: Any) -> Any:

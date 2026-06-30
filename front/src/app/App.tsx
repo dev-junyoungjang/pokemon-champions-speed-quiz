@@ -2130,9 +2130,13 @@ function AppContent() {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<QuizDraftAnswer[]>([])
   const [activeSlot, setActiveSlot] = useState(1)
+  const [teamLoaded, setTeamLoaded] = useState(false)
 
   const teamQuery = useQuery({ queryKey: ['team'], queryFn: api.getTeam })
   const difficultiesQuery = useQuery({ queryKey: ['difficulties'], queryFn: api.getDifficulties })
+  const saveTeam = useMutation({
+    mutationFn: api.saveTeam,
+  })
   const generateQuiz = useMutation({
     mutationFn: api.generateQuestions,
     onSuccess: (data) => {
@@ -2150,8 +2154,17 @@ function AppContent() {
     if (teamQuery.data) {
       const filledMembers = Array.from({ length: 6 }, (_, index) => teamQuery.data.members[index] ?? defaultMember(index + 1))
       setTeamDraft({ ...teamQuery.data, members: filledMembers })
+      setTeamLoaded(true)
     }
   }, [teamQuery.data])
+
+  useEffect(() => {
+    if (!teamLoaded) return
+    const timeoutId = window.setTimeout(() => {
+      saveTeam.mutate(teamDraft)
+    }, 600)
+    return () => window.clearTimeout(timeoutId)
+  }, [teamDraft, teamLoaded])
 
   const activeMember = teamDraft.members.find((member) => member.slot === activeSlot) ?? teamDraft.members[0]
   const previewQuestions = makeMockQuestions(teamDraft.members[0] ?? defaultMember(1))

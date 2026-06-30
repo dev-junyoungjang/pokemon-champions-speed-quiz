@@ -21,11 +21,34 @@ def test_pokemon_species_lookup_by_korean_name() -> None:
     assert species["nationalDexNumber"] == 25
     assert species["baseStats"]["spe"] == 90
     assert species["types"] == ["electric"]
-    assert species["availableAbilities"][0]["abilityId"] == "static"
-    assert species["availableAbilities"][0]["nameKo"] == "정전기"
-    assert species["availableMoves"][0]["moveId"] == "thunderbolt"
-    assert species["availableMoves"][0]["nameKo"] == "10만볼트"
+    assert any(ability["abilityId"] == "static" and ability["nameKo"] == "정전기" for ability in species["availableAbilities"])
+    assert any(move["moveId"] == "thunderbolt" and move["nameKo"] == "10만볼트" for move in species["availableMoves"])
     assert species["imageAssets"]["primaryArtworkUrl"].endswith("/025.png")
+
+
+def test_pokemon_species_lookup_can_return_mega_form() -> None:
+    response = client.get("/api/v1/pokemon/species", params={"query": "메가리자몽X"})
+
+    assert response.status_code == 200
+    species = response.json()["species"]
+    assert species["pokemonId"] == "charizard-mega-x"
+    assert species["nameKo"] == "메가리자몽X"
+    assert species["types"] == ["fire", "dragon"]
+    assert species["baseStats"] == {"hp": 78, "atk": 130, "def": 111, "spa": 130, "spd": 85, "spe": 100}
+    assert any(ability["abilityId"] == "tough-claws" for ability in species["availableAbilities"])
+    assert any(move["moveId"] == "flamethrower" for move in species["availableMoves"])
+
+
+def test_inferred_meowstic_female_mega_species_lookup() -> None:
+    response = client.get("/api/v1/pokemon/species", params={"query": "메가냐오닉스♀"})
+
+    assert response.status_code == 200
+    species = response.json()["species"]
+    assert species["pokemonId"] == "meowstic-female-mega"
+    assert species["nameKo"] == "메가냐오닉스♀"
+    assert species["types"] == ["psychic"]
+    assert species["baseStats"] == {"hp": 74, "atk": 48, "def": 76, "spa": 143, "spd": 101, "spe": 124}
+    assert any(ability["abilityId"] == "trace" for ability in species["availableAbilities"])
 
 
 def test_pokemon_species_lookup_by_english_name() -> None:

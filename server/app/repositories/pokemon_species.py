@@ -17,7 +17,7 @@ from app.models.domain import PokemonBattleOptions, PokemonMoveOption, PokemonSp
 
 DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_species_regulation_m_b.jsonl"
 MOVE_OPTIONS_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_move_options_sample.json"
-BATTLE_OPTIONS_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_battle_options_sample.json"
+BATTLE_OPTIONS_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_battle_options_regulation_m_b.json"
 REGULATION_SPECIES_PK = "SPECIES#pokemon_champions#REGULATION#M-B"
 REGULATION_OPTIONS_PK = "OPTIONS#pokemon_champions#REGULATION#M-B"
 
