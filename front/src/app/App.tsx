@@ -1,75 +1,42 @@
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
-import { Button, Chip, Slider, Spinner } from '@heroui/react'
+import { Button, Chip, Spinner } from '@heroui/react'
 import styled from '@emotion/styled'
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { api } from '../shared/api/client'
 import type { Difficulty, DifficultyOption, QuizQuestion } from '../entities/quiz/types'
-import type { TeamMember, UserTeam } from '../entities/team/types'
+import type { HeldItemOption, PokemonAbilityOption, PokemonMoveOption, PokemonSpecies, TeamMember, UserTeam } from '../entities/team/types'
 
 const queryClient = new QueryClient()
 
 type ScreenName = 'entry' | 'difficulty' | 'generating' | 'quiz' | 'create' | 'complete' | 'review'
 
 const Screen = styled.main`
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: #e9e9ec;
+  min-height: 100dvh;
+  background: #eef0f3;
   color: #111827;
   font-family:
     'Noto Sans KR', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 `
 
-const Phone = styled.div`
+const Stage = styled.div`
   position: relative;
-  width: min(100%, 390px);
-  height: min(844px, calc(100vh - 36px));
-  min-height: 720px;
-  overflow: hidden;
-  border-radius: 34px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 24px 20px calc(16px + env(safe-area-inset-bottom));
   background: #f8f8f9;
-  box-shadow:
-    0 28px 90px rgba(15, 23, 42, 0.16),
-    inset 0 0 0 8px rgba(255, 255, 255, 0.72);
 
-  @media (max-width: 430px) {
-    width: 100%;
-    height: calc(100vh - 16px);
-    min-height: 680px;
+  @media (min-width: 600px) {
+    margin: 28px auto;
+    min-height: calc(100dvh - 56px);
+    padding: 28px 28px;
     border-radius: 28px;
-  }
-`
-
-const PhoneContent = styled.div`
-  position: relative;
-  height: 100%;
-  padding: 12px 20px 18px;
-  overflow: hidden;
-`
-
-const StatusBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 18px;
-  margin-bottom: 6px;
-  color: #111827;
-  font-size: 12px;
-  font-weight: 900;
-`
-
-const Signal = styled.div`
-  display: flex;
-  gap: 3px;
-
-  span {
-    width: 5px;
-    height: 10px;
-    border-radius: 1px;
-    background: #4b5563;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
   }
 `
 
@@ -149,16 +116,10 @@ const Pill = styled.button<{ active?: boolean }>`
 
 const EntryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 11px;
-  max-height: calc(100% - 164px);
-  overflow-y: auto;
+  align-content: start;
   padding: 1px 1px 12px;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 `
 
 const EntryCard = styled.button`
@@ -260,14 +221,15 @@ const StatLine = styled.div`
 `
 
 const BottomAction = styled.div`
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 18px;
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 14px 0 calc(6px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, #f8f8f9 72%, rgba(248, 248, 249, 0));
 
   button {
     width: 100%;
-    height: 50px;
+    height: 52px;
     border-radius: 15px;
     font-weight: 900;
     box-shadow: 0 12px 26px rgba(0, 116, 245, 0.25);
@@ -526,12 +488,10 @@ const RuleLabel = styled.div`
 `
 
 const SwipeActions = styled.div`
-  position: absolute;
-  left: 48px;
-  right: 48px;
-  bottom: 34px;
   display: flex;
   justify-content: space-between;
+  margin-top: auto;
+  padding: 22px 28px calc(6px + env(safe-area-inset-bottom));
   font-size: 13px;
   font-weight: 1000;
 
@@ -563,10 +523,11 @@ const LoadingLayer = styled.div`
 const GeneratingWrap = styled.div`
   position: relative;
   display: grid;
-  min-height: calc(100% - 24px);
+  flex: 1;
+  min-height: 60vh;
   grid-template-rows: 1fr auto;
   overflow: hidden;
-  border-radius: 0 0 24px 24px;
+  border-radius: 24px;
   background:
     radial-gradient(circle at 50% -6%, #e6f1fe 0, rgba(230, 241, 254, 0.58) 34%, rgba(250, 250, 250, 0) 58%),
     #fafafa;
@@ -767,9 +728,9 @@ const ConfettiPiece = styled.span<{ left: number; delay: number; color: string }
 
 const CompleteWrap = styled.div`
   position: relative;
-  display: grid;
-  height: calc(100% - 34px);
-  grid-template-rows: 1fr auto;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   text-align: center;
 `
 
@@ -881,16 +842,14 @@ const SummaryCard = styled.div`
 `
 
 const CompleteActions = styled.div`
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
   display: grid;
   gap: 8px;
+  margin-top: auto;
+  padding-top: 18px;
 
   button {
     width: 100%;
-    height: 42px;
+    height: 48px;
     border-radius: 13px;
     font-weight: 900;
   }
@@ -904,12 +863,7 @@ const SoundButton = styled.button`
 `
 
 const ReviewScroll = styled.div`
-  height: calc(100% - 86px);
-  overflow-y: auto;
-  padding: 2px 2px 84px;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar { display: none; }
+  padding: 2px 2px 8px;
 `
 
 const ReviewHeader = styled(Header)`
@@ -1031,22 +985,26 @@ const ExplanationBox = styled.div`
 `
 
 const CreateScroll = styled.div`
-  height: calc(100% - 112px);
-  overflow-y: auto;
-  padding: 2px 2px 82px;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  padding: 2px 2px 8px;
 `
 
 const FormHero = styled.div`
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr) 54px;
   gap: 9px;
   align-items: end;
   margin-bottom: 6px;
+`
+
+const RemainingEv = styled.div`
+  margin: 2px 0 8px;
+  color: #8a929d;
+  font-size: 11px;
+  font-weight: 800;
+
+  strong {
+    color: #111827;
+  }
 `
 
 const PreviewTile = styled.div`
@@ -1106,21 +1064,6 @@ const SelectField = styled.select`
     border-color: #0b7bf3;
     box-shadow: 0 0 0 3px rgba(11, 123, 243, 0.10);
   }
-`
-
-const SelectLike = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 34px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0 11px;
-  color: #7b8089;
-  font-size: 11px;
-  font-weight: 800;
 `
 
 const TwoColumnFields = styled.div`
@@ -1193,25 +1136,45 @@ const StatValue = styled.span`
 const RangeWrap = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+`
 
-  [data-slot='slider'] {
-    flex: 1;
-    min-width: 0;
-  }
+// 네이티브 range: 끝단(0=왼쪽, 32=오른쪽)이 브라우저 기본대로 딱 맞음
+const EvRange = styled.input`
+  flex: 1;
+  min-width: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: #e6e8ec;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  cursor: pointer;
 
-  [data-slot='slider-track'] {
-    height: 6px;
-    border-radius: 999px;
-  }
-
-  [data-slot='slider-fill'] {
-    background: #0b7bf3;
-  }
-
-  [data-slot='slider-thumb'] {
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
     width: 14px;
     height: 14px;
+    border-radius: 50%;
+    background: #f97316;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
+  }
+
+  &::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: #e6e8ec;
+  }
+
+  &::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    border-radius: 50%;
+    background: #f97316;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
   }
 `
 
@@ -1230,6 +1193,26 @@ const TinyRoundButton = styled.button`
 `
 
 const typeColors = ['#79d19d', '#a78bfa', '#f59e0b', '#ef4444', '#60a5fa', '#f472b6']
+const typeMeta: Record<string, { ko: string; color: string }> = {
+  normal: { ko: '노말', color: '#a8a77a' },
+  fire: { ko: '불꽃', color: '#ee8130' },
+  water: { ko: '물', color: '#6390f0' },
+  electric: { ko: '전기', color: '#f7d02c' },
+  grass: { ko: '풀', color: '#7ac74c' },
+  ice: { ko: '얼음', color: '#96d9d6' },
+  fighting: { ko: '격투', color: '#c22e28' },
+  poison: { ko: '독', color: '#a33ea1' },
+  ground: { ko: '땅', color: '#e2bf65' },
+  flying: { ko: '비행', color: '#a98ff3' },
+  psychic: { ko: '에스퍼', color: '#f95587' },
+  bug: { ko: '벌레', color: '#a6b91a' },
+  rock: { ko: '바위', color: '#b6a136' },
+  ghost: { ko: '고스트', color: '#735797' },
+  dragon: { ko: '드래곤', color: '#6f35fc' },
+  dark: { ko: '악', color: '#705746' },
+  steel: { ko: '강철', color: '#b7b7ce' },
+  fairy: { ko: '페어리', color: '#d685ad' },
+}
 const difficultyTones = ['#c8ffe3', '#dbeafe', '#ffe4a8', '#ffd1e1', '#ede9fe']
 const confettiColors = ['#006FEE', '#17C964', '#F31260', '#F5A524', '#A33EA1', '#63BC5A']
 
@@ -1276,6 +1259,36 @@ function pokemonPatchFromName(value: string): Partial<TeamMember> {
   }
 }
 
+function pokemonPatchFromSpecies(species: PokemonSpecies): Partial<TeamMember> {
+  return {
+    pokemonId: species.pokemonId,
+    pokemonName: species.nameKo,
+    nationalDexNumber: species.nationalDexNumber,
+    imageAssets: species.imageAssets,
+    baseStatsSnapshot: species.baseStats,
+    speciesTypes: species.types,
+    availableAbilities: species.availableAbilities,
+    availableMoves: species.availableMoves,
+    ability: species.availableAbilities[0]?.abilityId ?? null,
+    item: species.megaStoneItemId ?? null,
+    moves: species.availableMoves.slice(0, 4).map((move) => move.moveId),
+  }
+}
+
+function moveOptionLabel(move: PokemonMoveOption) {
+  const type = typeMeta[move.type]?.ko ?? move.type
+  const power = move.power ? ` / 위력 ${move.power}` : ''
+  return `${move.nameKo} (${type}${power})`
+}
+
+function abilityOptionLabel(ability: PokemonAbilityOption) {
+  return `${ability.nameKo}${ability.hidden ? ' (숨겨진 특성)' : ''}`
+}
+
+function heldItemOptionLabel(item: HeldItemOption) {
+  return item.nameKo === item.nameEn ? item.nameKo : `${item.nameKo} / ${item.nameEn}`
+}
+
 type QuizDraftAnswer = {
   question: QuizQuestion
   answer: boolean
@@ -1290,11 +1303,15 @@ type QuizSummary = {
 
 const defaultMember = (slot: number): TeamMember => ({
   slot,
-  pokemonId: slot === 1 ? 'garchomp' : `pokemon-${slot}`,
-  pokemonName: slot === 1 ? '한카리아스' : '',
-  nationalDexNumber: slot === 1 ? 445 : null,
-  imageAssets: slot === 1 ? imageAssetsFromDex(445) : null,
-  baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: slot === 1 ? 102 : 80 },
+  pokemonId: `pokemon-${slot}`,
+  pokemonName: '',
+  nationalDexNumber: null,
+  imageAssets: null,
+  baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: 80 },
+  speciesTypes: [],
+  availableAbilities: [],
+  availableMoves: [],
+  moves: [],
   level: 50,
   nature: 'Jolly',
   ability: null,
@@ -1302,55 +1319,6 @@ const defaultMember = (slot: number): TeamMember => ({
   evs: {},
   ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
 })
-
-function mockMember(slot: number, name: string, dex: number, baseSpeed: number): TeamMember {
-  return {
-    slot,
-    pokemonId: name.toLowerCase().replace(/\s+/g, '-'),
-    pokemonName: name,
-    nationalDexNumber: dex,
-    imageAssets: imageAssetsFromDex(dex),
-    baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: baseSpeed },
-    level: 50,
-    nature: 'Jolly',
-    ability: null,
-    item: null,
-    evs: {},
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
-  }
-}
-
-function makeMockQuestions(subject: TeamMember): QuizQuestion[] {
-  const baseSubject = subject.pokemonName ? subject : mockMember(1, '한카리아스', 445, 102)
-  const opponents = [
-    mockMember(99, '무쇠손', 992, 50),
-    mockMember(100, '드래펄트', 887, 142),
-    mockMember(101, '망나뇽', 149, 80),
-  ]
-
-  return opponents.map((opponent, index) => {
-    const subjectSpeed = baseSubject.baseStatsSnapshot.spe
-    const opponentSpeed = opponent.baseStatsSnapshot.spe
-    return {
-      id: `mock-speed-preview-${index + 1}`,
-      difficulty: 'easy',
-      mode: 'IS_FASTER',
-      statement: `내 ${baseSubject.pokemonName}가 ${opponent.pokemonName}보다 빠를까?`,
-      answerType: 'YES_NO',
-      correctAnswer: subjectSpeed > opponentSpeed,
-      subject: {
-        build: baseSubject,
-        speed: { rawSpeed: subjectSpeed, effectiveSpeed: subjectSpeed, modifiers: [`base speed=${subjectSpeed}`] },
-      },
-      opponent: {
-        build: opponent,
-        speed: { rawSpeed: opponentSpeed, effectiveSpeed: opponentSpeed, modifiers: [`base speed=${opponentSpeed}`] },
-      },
-      explanation: `${baseSubject.pokemonName}: ${subjectSpeed}, ${opponent.pokemonName}: ${opponentSpeed}. ${subjectSpeed} ${subjectSpeed > opponentSpeed ? '>' : '<='} ${opponentSpeed} 이므로 정답은 ${subjectSpeed > opponentSpeed ? '예' : '아니오'}입니다.`,
-      rulesetVersion: 'mock-preview',
-    } satisfies QuizQuestion
-  })
-}
 
 function imageAssetsFromDex(nationalDexNumber: number) {
   const padded = String(nationalDexNumber).padStart(3, '0')
@@ -1429,7 +1397,30 @@ function KoreanName({ member }: { member: TeamMember }) {
   return <>{member.pokemonName || '포켓몬 추가'}</>
 }
 
-function EntryScreen({ teamDraft, onStart, onOpenCreate }: { teamDraft: UserTeam; onStart: () => void; onOpenCreate: (slot: number) => void }) {
+type EntryStatKey = keyof TeamMember['baseStatsSnapshot']
+const entryStatOptions: Array<[EntryStatKey, string]> = [
+  ['spe', '스피드'],
+  ['hp', 'HP'],
+  ['atk', '공격'],
+  ['def', '방어'],
+  ['spa', '특공'],
+  ['spd', '특방'],
+]
+
+function EntryScreen({
+  teamDraft,
+  onStart,
+  onOpenCreate,
+  startError,
+}: {
+  teamDraft: UserTeam
+  onStart: () => void
+  onOpenCreate: (slot: number) => void
+  startError?: string | null
+}) {
+  const [selectedStat, setSelectedStat] = useState<EntryStatKey>('spe')
+  const selectedStatLabel = entryStatOptions.find(([stat]) => stat === selectedStat)?.[1] ?? '스피드'
+
   return (
     <>
       <Header>
@@ -1441,8 +1432,8 @@ function EntryScreen({ teamDraft, onStart, onOpenCreate }: { teamDraft: UserTeam
 
       <FilterRow>
         <TinyLabel>표시</TinyLabel>
-        {['스피드', 'HP', '공격', '방어', '특공', '특방'].map((label, index) => (
-          <Pill key={label} active={index === 0}>{label}</Pill>
+        {entryStatOptions.map(([stat, label]) => (
+          <Pill key={stat} active={selectedStat === stat} type="button" onClick={() => setSelectedStat(stat)}>{label}</Pill>
         ))}
       </FilterRow>
 
@@ -1467,8 +1458,8 @@ function EntryScreen({ teamDraft, onStart, onOpenCreate }: { teamDraft: UserTeam
                     <TypeDot color={typeColors[(index + 1) % typeColors.length]} />
                   </TypeRow>
                   <StatLine>
-                    <span>스피드</span>
-                    <strong>{member.baseStatsSnapshot.spe}</strong>
+                    <span>{selectedStatLabel}</span>
+                    <strong>{member.baseStatsSnapshot[selectedStat]}</strong>
                   </StatLine>
                 </>
               ) : (
@@ -1477,7 +1468,7 @@ function EntryScreen({ teamDraft, onStart, onOpenCreate }: { teamDraft: UserTeam
                   <EntryName>포켓몬 추가</EntryName>
                   <TypeRow />
                   <StatLine>
-                    <span>스피드</span>
+                    <span>{selectedStatLabel}</span>
                     <strong>-</strong>
                   </StatLine>
                 </>
@@ -1486,6 +1477,8 @@ function EntryScreen({ teamDraft, onStart, onOpenCreate }: { teamDraft: UserTeam
           )
         })}
       </EntryGrid>
+
+      {startError && <GeneratingError>{startError}</GeneratingError>}
 
       <BottomAction>
         <Button variant="primary" onPress={onStart}>퀴즈 시작하기</Button>
@@ -1872,41 +1865,88 @@ function natureLabel(option: NatureOption) {
   return `${option.ko} (${statAbbreviations[option.up]}+,${statAbbreviations[option.down]}-)`
 }
 
-function natureDelta(nature: string, stat: keyof TeamMember['baseStatsSnapshot']) {
+// Pokémon Champions 룰: 엔트리 1마리당 노력치(EV) 총량 한도
+const EV_BUDGET = 66
+
+type StatKey = keyof TeamMember['baseStatsSnapshot']
+
+function natureMultiplier(nature: string, stat: StatKey) {
   const option = natureOptions.find((item) => item.value === nature)
-  if (option?.up === stat) return 10
-  if (option?.down === stat) return -10
-  return 0
+  if (option?.up === stat) return 1.1
+  if (option?.down === stat) return 0.9
+  return 1.0
+}
+
+// Lv50 실효 스탯 (개체값 IV, 노력치 EV, 성격 배율 반영)
+function lv50Stat(stat: StatKey, base: number, ev: number, iv: number, nature: string) {
+  const core = Math.floor((2 * base + iv + Math.floor(ev / 4)) * 50 / 100)
+  if (stat === 'hp') return core + 50 + 10
+  return Math.floor((core + 5) * natureMultiplier(nature, stat))
 }
 
 function CreatePokemonScreen({
   member,
   onBack,
   onUpdate,
+  onSave,
 }: {
   member: TeamMember
   onBack: () => void
   onUpdate: (patch: Partial<TeamMember>) => void
+  onSave: () => void
 }) {
   function updateEv(stat: keyof TeamMember['evs'], value: number) {
     onUpdate({ evs: { ...member.evs, [stat]: value } })
   }
 
-  function updateDex(value: number) {
-    onUpdate({
-      nationalDexNumber: value,
-      imageAssets: value > 0 ? imageAssetsFromDex(value) : null,
-    })
+  function updateMove(index: number, moveId: string) {
+    const moves = [...(member.moves ?? [])]
+    if (moveId && moves.some((existingMoveId, moveIndex) => moveIndex !== index && existingMoveId === moveId)) {
+      return
+    }
+    moves[index] = moveId
+    onUpdate({ moves })
   }
 
+  const pokemonLookupQuery = useMemo(() => member.pokemonName.trim(), [member.pokemonName])
+
+  useEffect(() => {
+    if (!pokemonLookupQuery) return undefined
+
+    let cancelled = false
+    const timeoutId = window.setTimeout(() => {
+      api.getPokemonSpecies(pokemonLookupQuery)
+        .then(({ species }) => {
+          if (!cancelled) onUpdate(pokemonPatchFromSpecies(species))
+        })
+        .catch(() => {
+          // Unknown/incomplete names are allowed while the user is typing.
+        })
+    }, 250)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+    }
+  }, [pokemonLookupQuery])
+
   const previewMember = member.pokemonName ? member : { ...member, pokemonName: '한카리아스', nationalDexNumber: 445, imageAssets: imageAssetsFromDex(445) }
+  const displayTypes = member.speciesTypes?.length ? member.speciesTypes : []
+  const availableAbilities = member.availableAbilities ?? []
+  const availableMoves = member.availableMoves ?? []
+  const heldItemsQuery = useQuery({ queryKey: ['held-items'], queryFn: api.getHeldItems })
+  const heldItems = heldItemsQuery.data?.items ?? []
+  const isMegaPokemon = member.pokemonId.includes('-mega')
+  const fixedMegaStone = isMegaPokemon ? heldItems.find((item) => item.itemId === member.item) : undefined
+  const fixedMegaStoneLabel = fixedMegaStone ? heldItemOptionLabel(fixedMegaStone) : member.item
+  const usedEv = statLabels.reduce((sum, [stat]) => sum + (member.evs[stat] ?? 0), 0)
+  const remainingEv = EV_BUDGET - usedEv
 
   return (
     <>
       <Header>
         <HeaderCopy>
           <PageTitle>포켓몬 만들기</PageTitle>
-          <PageSubtitle>엔트리에 저장할 실전 샘플</PageSubtitle>
         </HeaderCopy>
         <IconButton onClick={onBack}>×</IconButton>
       </Header>
@@ -1926,18 +1966,41 @@ function CreatePokemonScreen({
               <TextField value={member.pokemonName} placeholder="예: 피카츄 / 리자몽" onChange={(event) => onUpdate(pokemonPatchFromName(event.target.value))} />
             </FieldLabel>
           </FieldGroup>
+          <FieldLabel>
+            Lv
+            <TextField
+              type="number"
+              min={1}
+              max={100}
+              value={member.level}
+              onChange={(event) => onUpdate({ level: Math.min(100, Math.max(1, Number(event.target.value) || 1)) })}
+              style={{ textAlign: 'center', padding: '0 6px' }}
+            />
+          </FieldLabel>
         </FormHero>
 
         <TypeChipRow>
-          <SmallTypeChip color="#79d19d">드래곤</SmallTypeChip>
-          <SmallTypeChip color="#a78bfa">땅</SmallTypeChip>
+          {displayTypes.length ? displayTypes.map((type, index) => {
+            const meta = typeMeta[type] ?? { ko: type, color: typeColors[index % typeColors.length] }
+            return <SmallTypeChip key={type} color={meta.color}>{meta.ko}</SmallTypeChip>
+          }) : <SmallTypeChip color="#d1d5db">타입 정보 없음</SmallTypeChip>}
         </TypeChipRow>
 
         <TwoColumnFields>
-          {[1, 2, 3, 4].map((index) => (
+          {[0, 1, 2, 3].map((index) => (
             <FieldLabel key={index}>
-              기술 {index}
-              <SelectLike type="button">기술 선택 <span>⌄</span></SelectLike>
+              기술 {index + 1}
+              <SelectField
+                value={member.moves?.[index] ?? ''}
+                onChange={(event) => updateMove(index, event.target.value)}
+                disabled={!availableMoves.length}
+              >
+                <option value="">{availableMoves.length ? '기술 선택' : '사용 가능 기술 없음'}</option>
+                {availableMoves.map((move) => {
+                  const selectedInAnotherSlot = member.moves?.some((moveId, moveIndex) => moveIndex !== index && moveId === move.moveId) ?? false
+                  return <option key={move.moveId} value={move.moveId} disabled={selectedInAnotherSlot}>{moveOptionLabel(move)}</option>
+                })}
+              </SelectField>
             </FieldLabel>
           ))}
         </TwoColumnFields>
@@ -1945,18 +2008,37 @@ function CreatePokemonScreen({
         <FullField>
           <FieldLabel>
             특성
-            <SelectLike type="button">특성 선택 <span>⌄</span></SelectLike>
+            <SelectField
+              value={member.ability ?? ''}
+              onChange={(event) => onUpdate({ ability: event.target.value || null })}
+              disabled={!availableAbilities.length}
+            >
+              <option value="">{availableAbilities.length ? '특성 선택' : '사용 가능 특성 없음'}</option>
+              {availableAbilities.map((ability) => (
+                <option key={ability.abilityId} value={ability.abilityId}>{abilityOptionLabel(ability)}</option>
+              ))}
+            </SelectField>
           </FieldLabel>
         </FullField>
 
         <FullField>
           <FieldLabel>
             지닌 물건
-            <SelectLike type="button">지닌 물건 선택 <span>⌄</span></SelectLike>
+            <SelectField
+              value={member.item ?? ''}
+              onChange={(event) => onUpdate({ item: event.target.value || null })}
+              disabled={!heldItems.length || Boolean(isMegaPokemon && member.item)}
+            >
+              <option value="">{isMegaPokemon && member.item ? '메가 나이트 고정' : heldItems.length ? '지닌 물건 선택' : '사용 가능 도구 없음'}</option>
+              {isMegaPokemon && member.item && !fixedMegaStone && <option value={member.item}>{fixedMegaStoneLabel}</option>}
+              {heldItems.map((item) => (
+                <option key={item.itemId} value={item.itemId}>{heldItemOptionLabel(item)}</option>
+              ))}
+            </SelectField>
           </FieldLabel>
         </FullField>
 
-        <TwoColumnFields>
+        <FullField>
           <FieldLabel>
             성격
             <SelectField value={member.nature} onChange={(event) => onUpdate({ nature: event.target.value })}>
@@ -1965,11 +2047,7 @@ function CreatePokemonScreen({
               ))}
             </SelectField>
           </FieldLabel>
-          <FieldLabel>
-            National Dex
-            <TextField type="number" value={member.nationalDexNumber ?? ''} placeholder="445" onChange={(event) => updateDex(Number(event.target.value))} />
-          </FieldLabel>
-        </TwoColumnFields>
+        </FullField>
 
         <StatHeader>
           <span>스탯</span>
@@ -1978,33 +2056,31 @@ function CreatePokemonScreen({
           <span>성격</span>
           <span>합계</span>
         </StatHeader>
+        <RemainingEv>남은 노력치 <strong>{remainingEv} / {EV_BUDGET}</strong></RemainingEv>
         {statLabels.map(([stat, label]) => {
           const base = member.baseStatsSnapshot[stat]
           const ev = member.evs[stat] ?? 0
-          const natureBonus = natureDelta(member.nature, stat)
-          const total = base + Math.floor(ev / 8) + natureBonus
+          const iv = member.ivs?.[stat] ?? 31
+          const mult = natureMultiplier(member.nature, stat)
+          const total = lv50Stat(stat, base, ev, iv, member.nature)
           return (
             <StatRow key={stat}>
               <span>{label}</span>
               <StatValue>{base}</StatValue>
               <RangeWrap>
                 <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.max(0, ev - 4))}>−</TinyRoundButton>
-                <Slider
+                <EvRange
+                  type="range"
                   aria-label={`${label} EV`}
-                  minValue={0}
-                  maxValue={252}
+                  min={0}
+                  max={32}
                   step={4}
                   value={ev}
-                  onChange={(value) => updateEv(stat, Array.isArray(value) ? value[0] : value)}
-                >
-                  <Slider.Track>
-                    <Slider.Fill />
-                    <Slider.Thumb />
-                  </Slider.Track>
-                </Slider>
-                <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.min(252, ev + 4))}>+</TinyRoundButton>
+                  onChange={(event) => updateEv(stat, Number(event.target.value))}
+                />
+                <TinyRoundButton type="button" onClick={() => updateEv(stat, Math.min(32, ev + 4))}>+</TinyRoundButton>
               </RangeWrap>
-              <span>{natureBonus > 0 ? `+${natureBonus}` : natureBonus}</span>
+              <span>×{mult.toFixed(1)}</span>
               <strong>{total}</strong>
             </StatRow>
           )
@@ -2012,7 +2088,7 @@ function CreatePokemonScreen({
       </CreateScroll>
 
       <BottomAction>
-        <Button variant="primary" onPress={onBack}>엔트리에 저장</Button>
+        <Button variant="primary" onPress={onSave}>엔트리에 저장</Button>
       </BottomAction>
     </>
   )
@@ -2034,23 +2110,39 @@ function AppContent() {
   })
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>('normal')
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
+  const [quizSessionId, setQuizSessionId] = useState<string | null>(null)
   const [questionIndex, setQuestionIndex] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<QuizDraftAnswer[]>([])
   const [activeSlot, setActiveSlot] = useState(1)
+  const [quizStartError, setQuizStartError] = useState<string | null>(null)
 
   const teamQuery = useQuery({ queryKey: ['team'], queryFn: api.getTeam })
   const difficultiesQuery = useQuery({ queryKey: ['difficulties'], queryFn: api.getDifficulties })
+  const saveTeam = useMutation({
+    mutationFn: api.saveTeam,
+  })
   const generateQuiz = useMutation({
     mutationFn: api.generateQuestions,
     onSuccess: (data) => {
+      if (!data.questions.length) {
+        setQuestions([])
+        setQuizSessionId(null)
+        setQuestionIndex(0)
+        setQuizAnswers([])
+        setQuizStartError('최소 1마리 이상 엔트리에 저장해야 퀴즈를 시작할 수 있어요.')
+        setScreen('entry')
+        return
+      }
       setQuestions(data.questions)
+      setQuizSessionId(data.sessionId ?? null)
       setQuestionIndex(0)
       setQuizAnswers([])
+      setQuizStartError(null)
       setScreen('quiz')
     },
   })
   const answerQuestion = useMutation({
-    mutationFn: ({ id, answer }: { id: string; answer: boolean }) => api.answerQuestion(id, answer),
+    mutationFn: ({ id, answer, sessionId }: { id: string; answer: boolean; sessionId?: string | null }) => api.answerQuestion(id, answer, sessionId),
   })
 
   useEffect(() => {
@@ -2061,10 +2153,10 @@ function AppContent() {
   }, [teamQuery.data])
 
   const activeMember = teamDraft.members.find((member) => member.slot === activeSlot) ?? teamDraft.members[0]
-  const previewQuestions = makeMockQuestions(teamDraft.members[0] ?? defaultMember(1))
-  const sessionQuestions = questions.length ? questions : previewQuestions
-  const effectiveAnswers = quizAnswers.length ? quizAnswers : (screen === 'complete' || screen === 'review' ? previewQuestions.map((question, index) => ({ question, answer: index === 1 ? true : question.correctAnswer })) : [])
-  const currentQuestion = sessionQuestions[questionIndex] ?? (screen === 'quiz' ? sessionQuestions[0] : undefined)
+  const hasSavedPokemon = teamDraft.members.some((member) => Boolean(member.pokemonId && member.pokemonName))
+  const sessionQuestions = questions
+  const effectiveAnswers = quizAnswers
+  const currentQuestion = sessionQuestions[questionIndex]
   const mascot = teamDraft.members.find((member) => member.pokemonName) ?? defaultMember(1)
 
   function updateMember(slot: number, patch: Partial<TeamMember>) {
@@ -2074,16 +2166,42 @@ function AppContent() {
     }))
   }
 
+  function saveCurrentTeam() {
+    saveTeam.mutate(teamDraft, {
+      onSuccess: (savedTeam) => {
+        queryClient.setQueryData(['team'], savedTeam)
+        setScreen('entry')
+      },
+    })
+  }
+
   function openCreate(slot: number) {
+    setQuizStartError(null)
     setActiveSlot(slot)
     setScreen('create')
   }
 
+  function openDifficulty() {
+    if (!hasSavedPokemon) {
+      setQuizStartError('최소 1마리 이상 엔트리에 저장해야 퀴즈를 시작할 수 있어요.')
+      return
+    }
+    setQuizStartError(null)
+    setScreen('difficulty')
+  }
+
   function startQuiz(difficulty = selectedDifficulty ?? 'easy') {
+    if (!hasSavedPokemon) {
+      setQuizStartError('최소 1마리 이상 엔트리에 저장해야 퀴즈를 시작할 수 있어요.')
+      setScreen('entry')
+      return
+    }
+    setQuizStartError(null)
     setSelectedDifficulty(difficulty)
     setQuizAnswers([])
     setQuestionIndex(0)
     setQuestions([])
+    setQuizSessionId(null)
     setScreen('generating')
     generateQuiz.mutate(difficulty)
   }
@@ -2093,6 +2211,7 @@ function AppContent() {
 
     const nextAnswers = [...quizAnswers, { question: currentQuestion, answer: answerValue }]
     setQuizAnswers(nextAnswers)
+    answerQuestion.mutate({ id: currentQuestion.id, answer: answerValue, sessionId: quizSessionId })
 
     if (questionIndex >= sessionQuestions.length - 1) {
       setScreen('complete')
@@ -2104,52 +2223,46 @@ function AppContent() {
 
   return (
     <Screen>
-      <Phone>
-        <PhoneContent>
-          <StatusBar>
-            <span>9:41</span>
-            <Signal><span /><span /><span /><span /></Signal>
-          </StatusBar>
-
-          {screen === 'entry' && <EntryScreen teamDraft={teamDraft} onStart={() => setScreen('difficulty')} onOpenCreate={openCreate} />}
-          {screen === 'create' && activeMember && (
-            <CreatePokemonScreen
-              member={activeMember}
-              onBack={() => setScreen('entry')}
-              onUpdate={(patch) => updateMember(activeSlot, patch)}
-            />
-          )}
-          {screen === 'difficulty' && (
-            <DifficultyScreen
-              options={difficultiesQuery.data}
-              selectedDifficulty={selectedDifficulty}
-              onBack={() => setScreen('entry')}
-              onSelect={setSelectedDifficulty}
-              onStart={() => startQuiz(selectedDifficulty ?? 'easy')}
-            />
-          )}
-          {screen === 'generating' && (
-            <GeneratingQuizScreen
-              difficulty={selectedDifficulty}
-              isError={generateQuiz.isError}
-              onBack={() => setScreen('difficulty')}
-              onRetry={() => startQuiz(selectedDifficulty ?? 'easy')}
-            />
-          )}
-          {screen === 'quiz' && (
-            <QuizScreen
-              difficulty={selectedDifficulty}
-              currentQuestion={currentQuestion}
-              questionIndex={questionIndex}
-              total={sessionQuestions.length}
-              isLoading={generateQuiz.isPending}
-              onAnswer={(value) => void answer(value)}
-            />
-          )}
-          {screen === 'complete' && <CompleteScreen answers={effectiveAnswers} mascot={mascot} onReview={() => setScreen('review')} onHome={() => setScreen('entry')} />}
-          {screen === 'review' && <ReviewScreen answers={effectiveAnswers} onHome={() => setScreen('entry')} />}
-        </PhoneContent>
-      </Phone>
+      <Stage>
+        {screen === 'entry' && <EntryScreen teamDraft={teamDraft} onStart={openDifficulty} onOpenCreate={openCreate} startError={quizStartError} />}
+        {screen === 'create' && activeMember && (
+          <CreatePokemonScreen
+            member={activeMember}
+            onBack={() => setScreen('entry')}
+            onUpdate={(patch) => updateMember(activeSlot, patch)}
+            onSave={saveCurrentTeam}
+          />
+        )}
+        {screen === 'difficulty' && (
+          <DifficultyScreen
+            options={difficultiesQuery.data}
+            selectedDifficulty={selectedDifficulty}
+            onBack={() => setScreen('entry')}
+            onSelect={setSelectedDifficulty}
+            onStart={() => startQuiz(selectedDifficulty ?? 'easy')}
+          />
+        )}
+        {screen === 'generating' && (
+          <GeneratingQuizScreen
+            difficulty={selectedDifficulty}
+            isError={generateQuiz.isError}
+            onBack={() => setScreen('difficulty')}
+            onRetry={() => startQuiz(selectedDifficulty ?? 'easy')}
+          />
+        )}
+        {screen === 'quiz' && (
+          <QuizScreen
+            difficulty={selectedDifficulty}
+            currentQuestion={currentQuestion}
+            questionIndex={questionIndex}
+            total={sessionQuestions.length}
+            isLoading={generateQuiz.isPending}
+            onAnswer={(value) => void answer(value)}
+          />
+        )}
+        {screen === 'complete' && <CompleteScreen answers={effectiveAnswers} mascot={mascot} onReview={() => setScreen('review')} onHome={() => setScreen('entry')} />}
+        {screen === 'review' && <ReviewScreen answers={effectiveAnswers} onHome={() => setScreen('entry')} />}
+      </Stage>
     </Screen>
   )
 }

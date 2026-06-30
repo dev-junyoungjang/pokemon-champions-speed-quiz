@@ -19,6 +19,32 @@ export type PokemonImageAssets = {
   hotlinkPolicy?: string
 }
 
+export type PokemonAbilityOption = {
+  abilityId: string
+  nameEn: string
+  nameKo: string
+  slot?: number | null
+  hidden?: boolean
+}
+
+export type PokemonMoveOption = {
+  moveId: string
+  nameEn: string
+  nameKo: string
+  type: string
+  damageClass?: string | null
+  power?: number | null
+  accuracy?: number | null
+}
+
+export type HeldItemOption = {
+  itemId: string
+  nameEn: string
+  nameKo: string
+  categories: string[]
+  spriteUrl?: string | null
+}
+
 export type TeamMember = {
   slot: number
   pokemonId: string
@@ -26,6 +52,10 @@ export type TeamMember = {
   nationalDexNumber?: number | null
   imageAssets?: PokemonImageAssets | null
   baseStatsSnapshot: BaseStats
+  speciesTypes?: string[]
+  availableAbilities?: PokemonAbilityOption[]
+  availableMoves?: PokemonMoveOption[]
+  moves?: string[]
   level: number
   nature: string
   ability?: string | null
@@ -38,6 +68,25 @@ export type TeamMember = {
   status?: string | null
   tailwind?: boolean
   itemConsumed?: boolean
+}
+
+export type PokemonSpecies = {
+  pokemonId: string
+  nameEn: string
+  nameKo: string
+  speciesId: string
+  speciesNameEn: string
+  speciesNameKo: string
+  nationalDexNumber: number
+  pokemonChampionsCode: string
+  formKind?: string | null
+  megaParentPokemonId?: string | null
+  megaStoneItemId?: string | null
+  baseStats: BaseStats
+  imageAssets: PokemonImageAssets
+  types: string[]
+  availableAbilities: PokemonAbilityOption[]
+  availableMoves: PokemonMoveOption[]
 }
 
 export type UserTeam = {

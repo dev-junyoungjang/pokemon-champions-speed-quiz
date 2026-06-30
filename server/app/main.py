@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+import logging
+
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+
+# Surface app INFO logs (e.g. OpenAI results) under uvicorn's default config.
+logging.basicConfig(level=logging.INFO)
 
 from app.core.settings import get_settings
 from app.models.domain import (
@@ -14,13 +19,52 @@ from app.models.domain import (
     UserTeam,
     ValidatedQuizQuestion,
 )
+from app.repositories.held_items import get_held_items_by_query
 from app.repositories.in_memory import InMemoryRepository
+from app.repositories.pokemon_species import get_species_by_query, list_meta_samples, list_species
+from app.repositories.quiz_history import DynamoDbQuizHistoryRepository, QuizHistoryRepository
+from app.repositories.user_pokemon_data import (
+    UserPokemonDataRepository,
+    reset_current_user_session_id,
+    set_current_user_session_id,
+)
 from app.services.quiz_service import QuizService
 
-repository = InMemoryRepository()
-quiz_service = QuizService(repository)
+
+def build_repository() -> InMemoryRepository:
+    settings = get_settings()
+    if settings.user_pokemon_data_source == "dynamodb":
+        return UserPokemonDataRepository(
+            table_name=settings.user_pokemon_data_table_name,
+            region_name=settings.aws_region,
+        )
+    return InMemoryRepository()
+
+
+def build_quiz_history_repository() -> QuizHistoryRepository:
+    settings = get_settings()
+    if settings.quiz_history_source == "dynamodb":
+        return DynamoDbQuizHistoryRepository(
+            table_name=settings.quiz_history_table_name,
+            region_name=settings.aws_region,
+        )
+    return QuizHistoryRepository()
+
+
+repository = build_repository()
+history_repository = build_quiz_history_repository()
+quiz_service = QuizService(repository, meta_provider=list_meta_samples)
 
 app = FastAPI(title="Pokémon Champions Speed Quiz API", version="0.1.0")
+
+
+@app.middleware("http")
+async def user_session_middleware(request: Request, call_next):
+    token = set_current_user_session_id(request.headers.get("x-user-session-id", "anonymous"))
+    try:
+        return await call_next(request)
+    finally:
+        reset_current_user_session_id(token)
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,6 +111,22 @@ def difficulties() -> list[dict[str, str]]:
     ]
 
 
+@app.get("/api/v1/pokemon/species")
+def pokemon_species(query: str | None = Query(default=None, min_length=1)) -> dict[str, object]:
+    if query is not None:
+        species = get_species_by_query(query)
+        if species is None:
+            raise HTTPException(status_code=404, detail="Pokemon species not found")
+        return {"species": species.model_dump(by_alias=True)}
+
+    return {"species": [species.model_dump(by_alias=True) for species in list_species()]}
+
+
+@app.get("/api/v1/items")
+def held_items(query: str | None = Query(default=None, min_length=1)) -> dict[str, object]:
+    return {"items": get_held_items_by_query(query)}
+
+
 @app.get("/api/v1/teams/me", response_model=UserTeam)
 def get_my_team() -> UserTeam:
     return repository.get_team("main")
@@ -97,7 +157,17 @@ def render_question(request: RenderQuestionRequest) -> dict[str, object]:
 @app.post("/api/v1/quiz/questions")
 def generate_questions(request: GenerateQuizRequest) -> dict[str, object]:
     questions = quiz_service.generate_questions(request)
-    return {"questions": questions}
+    session_id = history_repository.create_session(
+        difficulty=request.difficulty.value,
+        team_name=request.team_name,
+        questions=questions,
+    ) if questions else None
+    return {"questions": questions, "sessionId": session_id}
+
+
+@app.get("/api/v1/quiz/history")
+def quiz_history(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, object]:
+    return {"sessions": history_repository.list_sessions(limit)}
 
 
 @app.post("/api/v1/quiz/answers", response_model=AnswerResult)
@@ -105,10 +175,24 @@ def submit_answer(request: AnswerRequest) -> AnswerResult:
     question = quiz_service.get_question(request.question_id)
     if not question:
         raise HTTPException(status_code=404, detail="Question not found or expired")
-    return AnswerResult(
+    result = AnswerResult(
         correct=request.answer == question.correct_answer,
         correctAnswer=question.correct_answer,
         explanation=question.explanation,
         subjectSpeed=question.subject.speed.effective_speed,
         opponentSpeed=question.opponent.speed.effective_speed,
     )
+    history_repository.record_answer(
+        session_id=request.session_id,
+        question=question,
+        selected_answer=request.answer,
+        result=result,
+    )
+    return result
+
+
+# AWS Lambda entry point (Mangum wraps the ASGI app). Harmless when running
+# locally under uvicorn. lifespan="off" since the app has no startup/shutdown hooks.
+from mangum import Mangum  # noqa: E402
+
+handler = Mangum(app, lifespan="off")

@@ -71,12 +71,67 @@ class PokemonImageAssets(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class PokemonAbilityOption(BaseModel):
+    ability_id: str = Field(alias="abilityId")
+    name_en: str = Field(alias="nameEn")
+    name_ko: str = Field(alias="nameKo")
+    slot: int | None = None
+    hidden: bool = False
+
+    model_config = {"populate_by_name": True}
+
+
+class PokemonMoveOption(BaseModel):
+    move_id: str = Field(alias="moveId")
+    name_en: str = Field(alias="nameEn")
+    name_ko: str = Field(alias="nameKo")
+    type: str
+    damage_class: str | None = Field(default=None, alias="damageClass")
+    power: int | None = None
+    accuracy: int | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class PokemonBattleOptions(BaseModel):
+    pokemon_id: str = Field(alias="pokemonId")
+    available_abilities: list[PokemonAbilityOption] = Field(default_factory=list, alias="availableAbilities")
+    available_moves: list[PokemonMoveOption] = Field(default_factory=list, alias="availableMoves")
+
+    model_config = {"populate_by_name": True}
+
+
+class PokemonSpecies(BaseModel):
+    pokemon_id: str = Field(alias="pokemonId")
+    name_en: str = Field(alias="nameEn")
+    name_ko: str = Field(alias="nameKo")
+    species_id: str = Field(alias="speciesId")
+    species_name_en: str = Field(alias="speciesNameEn")
+    species_name_ko: str = Field(alias="speciesNameKo")
+    national_dex_number: int = Field(alias="nationalDexNumber")
+    pokemon_champions_code: str = Field(alias="pokemonChampionsCode")
+    form_kind: str | None = Field(default=None, alias="formKind")
+    mega_parent_pokemon_id: str | None = Field(default=None, alias="megaParentPokemonId")
+    mega_stone_item_id: str | None = Field(default=None, alias="megaStoneItemId")
+    base_stats: BaseStats = Field(alias="baseStats")
+    image_assets: PokemonImageAssets = Field(alias="imageAssets")
+    types: list[str] = Field(default_factory=list)
+    available_abilities: list[PokemonAbilityOption] = Field(default_factory=list, alias="availableAbilities")
+    available_moves: list[PokemonMoveOption] = Field(default_factory=list, alias="availableMoves")
+
+    model_config = {"populate_by_name": True}
+
+
 class PokemonBuild(BaseModel):
     pokemon_id: str = Field(alias="pokemonId")
     pokemon_name: str = Field(alias="pokemonName")
     national_dex_number: int | None = Field(default=None, alias="nationalDexNumber")
     image_assets: PokemonImageAssets | None = Field(default=None, alias="imageAssets")
     base_stats_snapshot: BaseStats = Field(alias="baseStatsSnapshot")
+    species_types: list[str] = Field(default_factory=list, alias="speciesTypes")
+    available_abilities: list[PokemonAbilityOption] = Field(default_factory=list, alias="availableAbilities")
+    available_moves: list[PokemonMoveOption] = Field(default_factory=list, alias="availableMoves")
+    moves: list[str] = Field(default_factory=list)
     level: int = Field(default=50, ge=1, le=100)
     nature: str = "Neutral"
     ability: str | None = None
@@ -100,7 +155,7 @@ class TeamMember(PokemonBuild):
 class UserTeam(BaseModel):
     team_name: str = Field(default="main", alias="teamName")
     format: str = "pokemon_champions"
-    members: list[TeamMember] = Field(min_length=1, max_length=6)
+    members: list[TeamMember] = Field(default_factory=list, max_length=6)
 
     model_config = {"populate_by_name": True}
 
@@ -192,6 +247,7 @@ class GenerateQuizRequest(BaseModel):
 class AnswerRequest(BaseModel):
     question_id: str = Field(alias="questionId")
     answer: bool
+    session_id: str | None = Field(default=None, alias="sessionId")
 
     model_config = {"populate_by_name": True}
 

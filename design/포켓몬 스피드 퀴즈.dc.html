@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;}
+  .scr{overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
+  .scr::-webkit-scrollbar{display:none;}
+  img{user-select:none;-webkit-user-drag:none;}
+  @keyframes confFall{0%{transform:translateY(-40px) rotate(0deg);opacity:0;}10%{opacity:1;}100%{transform:translateY(720px) rotate(540deg);opacity:1;}}
+  @keyframes popIn{0%{transform:scale(.4);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
+  @keyframes ringPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);}}
+  @keyframes shadowPulse{0%,100%{transform:scaleX(1);opacity:.22;}50%{transform:scaleX(.78);opacity:.14;}}
+  @keyframes pokeSpin{0%{transform:rotate(0deg);}10%{transform:rotate(28deg);}20%{transform:rotate(-22deg);}30%{transform:rotate(18deg);}40%,100%{transform:rotate(0deg);}}
+  @keyframes dotBlink{0%,80%,100%{opacity:.25;transform:translateY(0);}40%{opacity:1;transform:translateY(-4px);}}
+  @keyframes barSlide{0%{transform:translateX(-100%);}100%{transform:translateX(220%);}}
+  @keyframes pokeSpin2{to{transform:rotate(360deg);}}
+</style>
+</helmet>
+
+<!-- ============ FRAME 1 — ENTRY LIST ============ -->
+<div style="position:absolute;left:80px;top:140px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">엔트리 목록</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">내 6마리 카드 그리드 · 라이트</div>
+  <div data-screen-label="EntryList" style="width:390px;height:844px;background:#f4f4f5;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.16);border:1px solid #e4e4e7;">
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#11181c;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div class="scr" style="position:absolute;top:44px;left:0;right:0;bottom:90px;">
+      <div style="padding:18px 20px 4px;">
+        <div style="font-size:24px;font-weight:800;color:#11181c;letter-spacing:-.02em;">내 엔트리</div>
+        <div style="font-size:13.5px;color:#71717a;margin-top:3px;">최대 6마리</div>
+      </div>
+      <div class="scr" style="display:flex;gap:7px;padding:8px 16px 4px;">
+        <span style="flex:0 0 auto;align-self:center;font-size:12px;font-weight:700;color:#a1a1aa;margin-right:2px;">표시</span>
+        <sc-for list="{{ statChips }}" as="s" hint-placeholder-count="6">
+          <button onClick="{{ s.onClick }}" style="flex:0 0 auto;height:32px;padding:0 13px;border-radius:999px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.color }};font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;">{{ s.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 16px 24px;">
+        <sc-for list="{{ entries }}" as="e" hint-placeholder-count="5">
+          <div style="background:#ffffff;border:1px solid #e4e4e7;border-radius:18px;padding:12px 12px 13px;position:relative;box-shadow:0 1px 2px rgba(24,24,27,.04);">
+            <div style="position:absolute;top:10px;right:10px;background:#f4f4f5;color:#52525b;font-size:11px;font-weight:700;padding:3px 7px;border-radius:7px;">Lv {{ e.lv }}</div>
+            <div style="height:96px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 60%,#f4f4f5 0%,#fafafa 70%);border-radius:14px;">
+              {{ e.spriteImg }}
+            </div>
+            <div style="font-size:14.5px;font-weight:700;color:#11181c;margin-top:8px;text-align:center;letter-spacing:-.01em;line-height:1.2;">{{ e.name }}</div>
+            <div style="display:flex;gap:5px;justify-content:center;margin-top:7px;">
+              <sc-for list="{{ e.types }}" as="t" hint-placeholder-count="2">
+                <span style="display:inline-flex;align-items:center;gap:4px;background:#f4f4f5;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#52525b;white-space:nowrap;">
+                  <span style="width:9px;height:9px;border-radius:3px;background:{{ t.c }};"></span>{{ t.n }}
+                </span>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid #f4f4f5;">
+              <span style="font-size:11.5px;color:#a1a1aa;font-weight:600;">{{ stat }}</span>
+              <span style="font-size:17px;font-weight:800;color:#006FEE;letter-spacing:-.01em;">{{ e.statVal }}</span>
+            </div>
+          </div>
+        </sc-for>
+        <div style="background:#ffffff;border:1.5px dashed #d4d4d8;border-radius:18px;min-height:206px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#a1a1aa;">
+          <div style="width:46px;height:46px;border-radius:14px;background:#f4f4f5;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:300;color:#71717a;line-height:1;">+</div>
+          <div style="font-size:13px;font-weight:600;">포켓몬 추가</div>
+          <div style="font-size:11px;color:#cbcbd1;">6마리 중 5마리</div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(180deg,rgba(244,244,245,0) 0%,#f4f4f5 38%);display:flex;align-items:center;padding:0 20px 16px;">
+      <button style="flex:1;height:52px;border:none;border-radius:16px;background:#006FEE;color:#fff;font-size:16px;font-weight:700;font-family:inherit;box-shadow:0 8px 20px rgba(0,111,238,.32);cursor:pointer;">퀴즈 시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 2 — DIFFICULTY ============ -->
+<div style="position:absolute;left:592px;top:140px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">난이도 선택</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">변수를 단계별로 추가</div>
+  <div data-screen-label="Difficulty" style="width:390px;height:844px;background:#f4f4f5;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.16);border:1px solid #e4e4e7;">
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#11181c;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div class="scr" style="position:absolute;top:44px;left:0;right:0;bottom:90px;">
+      <div style="padding:18px 20px 4px;display:flex;align-items:center;gap:12px;">
+        <button style="width:36px;height:36px;border-radius:11px;border:1px solid #e4e4e7;background:#fff;font-size:18px;color:#52525b;cursor:pointer;line-height:1;">‹</button>
+        <div>
+          <div style="font-size:22px;font-weight:800;color:#11181c;letter-spacing:-.02em;">난이도 선택</div>
+          <div style="font-size:13px;color:#71717a;margin-top:2px;">스피드 비교 · 6마리 엔트리</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:16px;">
+        <sc-for list="{{ diffs }}" as="d" hint-placeholder-count="4">
+          <div style="background:#fff;border:1.5px solid {{ d.ring }};border-radius:18px;padding:15px 15px;box-shadow:0 1px 2px rgba(24,24,27,.04);">
+            <div style="display:flex;align-items:center;gap:13px;">
+              <div style="width:42px;height:42px;border-radius:13px;background:{{ d.soft }};color:{{ d.color }};font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">{{ d.n }}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:7px;">
+                  <span style="font-size:16.5px;font-weight:800;color:#11181c;letter-spacing:-.01em;">{{ d.name }}</span>
+                  <sc-if value="{{ d.selected }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;color:#006FEE;background:#E6F1FE;padding:2px 7px;border-radius:6px;">선택됨</span></sc-if>
+                </div>
+                <div style="font-size:12.5px;color:#71717a;margin-top:3px;line-height:1.35;">{{ d.desc }}</div>
+              </div>
+              <span style="font-size:18px;color:#d4d4d8;flex:0 0 auto;">›</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;padding-left:55px;">
+              <sc-for list="{{ d.tags }}" as="g" hint-placeholder-count="3">
+                <span style="background:#f4f4f5;color:#52525b;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;">{{ g }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(180deg,rgba(244,244,245,0) 0%,#f4f4f5 38%);display:flex;align-items:center;padding:0 20px 16px;">
+      <button style="flex:1;height:52px;border:none;border-radius:16px;background:#006FEE;color:#fff;font-size:16px;font-weight:700;font-family:inherit;box-shadow:0 8px 20px rgba(0,111,238,.32);cursor:pointer;">보통으로 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 3 — SWIPE A (focus card) ============ -->
+<div style="position:absolute;left:1104px;top:140px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">스피드 스와입 퀴즈 · A안</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">포커스 카드 — 카드를 좌우로 드래그해보세요</div>
+  <div data-screen-label="SwipeA" style="width:390px;height:844px;background:#fafafa;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.16);border:1px solid #e4e4e7;">
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#11181c;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div style="position:absolute;top:44px;left:0;right:0;bottom:0;display:flex;flex-direction:column;">
+      <div style="padding:14px 20px 6px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;font-weight:700;color:#fff;background:{{ qA.diffColor }};padding:4px 11px;border-radius:999px;">{{ qA.diff }}</span>
+        <span style="font-size:13px;font-weight:700;color:#a1a1aa;">{{ progA }}</span>
+      </div>
+      <div style="padding:6px 22px 10px;text-align:center;">
+        <div style="font-size:20px;font-weight:800;color:#11181c;letter-spacing:-.02em;line-height:1.3;text-wrap:balance;">{{ qA.q }}</div>
+        <div style="font-size:13px;color:#a1a1aa;margin-top:5px;">속도 수치는 숨겨져 있어요 · 변수만 보고 판단</div>
+      </div>
+
+      <div style="flex:1;position:relative;margin:0 18px;display:flex;align-items:center;justify-content:center;">
+        <!-- next card peek -->
+        <div style="position:absolute;left:26px;right:26px;height:496px;background:#fff;border:1px solid #ececef;border-radius:26px;transform:scale(.94) translateY(6px);"></div>
+        <!-- draggable card -->
+        <div onPointerDown="{{ onDownA }}" style="position:relative;width:100%;height:500px;background:#fff;border:1px solid #e4e4e7;border-radius:26px;box-shadow:0 14px 34px rgba(24,24,27,.12);transform:{{ tA }};transition:{{ transA }};touch-action:none;cursor:grab;padding:24px 20px;display:flex;flex-direction:column;">
+          <div style="position:absolute;top:22px;left:22px;border:4px solid #17C964;color:#17C964;font-size:24px;font-weight:900;padding:3px 13px;border-radius:11px;transform:rotate(-16deg);opacity:{{ yesA }};">예 ✓</div>
+          <div style="position:absolute;top:22px;right:22px;border:4px solid #F31260;color:#F31260;font-size:24px;font-weight:900;padding:3px 13px;border-radius:11px;transform:rotate(16deg);opacity:{{ noA }};">아니오 ✕</div>
+
+          <div style="display:flex;align-items:stretch;justify-content:space-between;position:relative;margin-top:10px;">
+            <div style="flex:1;text-align:center;">
+              <div style="font-size:10.5px;font-weight:800;color:#006FEE;letter-spacing:.04em;">MY</div>
+              <div style="height:120px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 60%,#E6F1FE 0%,rgba(230,241,254,0) 72%);">
+                {{ mineImgA }}
+              </div>
+              <div style="font-size:14px;font-weight:800;color:#11181c;line-height:1.15;margin-top:2px;">{{ qA.mine.name }}</div>
+              <div style="display:flex;gap:4px;justify-content:center;margin-top:6px;">
+                <sc-for list="{{ qA.mine.types }}" as="t" hint-placeholder-count="2"><span style="width:18px;height:18px;border-radius:6px;background:{{ t.c }};" title="{{ t.n }}"></span></sc-for>
+              </div>
+            </div>
+            <div style="position:absolute;left:50%;top:46px;transform:translateX(-50%);width:40px;height:40px;border-radius:50%;background:#11181c;color:#fff;font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;z-index:2;border:3px solid #fff;">VS</div>
+            <div style="flex:1;text-align:center;">
+              <div style="font-size:10.5px;font-weight:800;color:#F31260;letter-spacing:.04em;">META</div>
+              <div style="height:120px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 60%,#FEE7EF 0%,rgba(254,231,239,0) 72%);">
+                {{ oppImgA }}
+              </div>
+              <div style="font-size:14px;font-weight:800;color:#11181c;line-height:1.15;margin-top:2px;">{{ qA.opp.name }}</div>
+              <div style="display:flex;gap:4px;justify-content:center;margin-top:6px;">
+                <sc-for list="{{ qA.opp.types }}" as="t" hint-placeholder-count="2"><span style="width:18px;height:18px;border-radius:6px;background:{{ t.c }};" title="{{ t.n }}"></span></sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;margin-top:12px;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="width:46px;height:46px;border-radius:50%;background:#f4f4f5;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#a1a1aa;">?</div>
+              <span style="font-size:10.5px;font-weight:700;color:#a1a1aa;">속도</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="width:46px;height:46px;border-radius:50%;background:#f4f4f5;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#a1a1aa;">?</div>
+              <span style="font-size:10.5px;font-weight:700;color:#a1a1aa;">속도</span>
+            </div>
+          </div>
+
+          <div style="margin-top:auto;padding-top:16px;border-top:1px solid #f4f4f5;">
+            <div style="font-size:11px;font-weight:700;color:#a1a1aa;margin-bottom:8px;letter-spacing:.02em;">적용 변수</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <sc-for list="{{ qA.chips }}" as="c" hint-placeholder-count="2">
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#f4f4f5;color:#3f3f46;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;white-space:nowrap;"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.c }};"></span>{{ c.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+
+          <sc-if value="{{ showCorrectA }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;border-radius:26px;background:rgba(23,201,100,.94);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+              <div style="font-size:54px;line-height:1;">✓</div>
+              <div style="font-size:22px;font-weight:900;margin-top:10px;">정답!</div>
+              <div style="font-size:13.5px;font-weight:600;margin-top:10px;opacity:.95;line-height:1.4;">{{ resultTextA }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showWrongA }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;border-radius:26px;background:rgba(243,18,96,.94);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+              <div style="font-size:54px;line-height:1;">✕</div>
+              <div style="font-size:22px;font-weight:900;margin-top:10px;">오답</div>
+              <div style="font-size:13.5px;font-weight:600;margin-top:10px;opacity:.95;line-height:1.4;">{{ resultTextA }}</div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:center;gap:18px;padding:14px 0 28px;">
+        <span style="font-size:13.5px;font-weight:700;color:#F31260;">← 아니오</span>
+        <span style="width:4px;height:4px;border-radius:50%;background:#d4d4d8;"></span>
+        <span style="font-size:13.5px;font-weight:700;color:#17C964;">예 →</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 5 — CREATE / EDIT POKEMON ============ -->
+<div style="position:absolute;left:2128px;top:140px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">엔트리 등록 / 편집</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">스크린샷의 Create Pokemon 카드 (스크롤)</div>
+  <div data-screen-label="CreatePokemon" style="width:390px;background:#ffffff;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.16);border:1px solid #e4e4e7;">
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#11181c;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div style="padding:8px 20px 28px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="font-size:21px;font-weight:800;color:#11181c;letter-spacing:-.02em;">포켓몬 만들기</div>
+        <button style="width:34px;height:34px;border-radius:50%;border:1px solid #e4e4e7;background:#fff;font-size:16px;color:#71717a;cursor:pointer;line-height:1;">✕</button>
+      </div>
+
+      <!-- sprite + name + lv -->
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:84px;height:84px;border-radius:14px;background:#f4f4f5;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10033.png" style="width:76px;height:76px;object-fit:contain;">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <label style="display:block;font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:6px;">포켓몬</label>
+          <div style="display:flex;align-items:center;border:2px solid #006FEE;border-radius:12px;padding:0 12px;height:46px;box-shadow:0 0 0 3px rgba(0,111,238,.12);">
+            <span style="flex:1;font-size:15px;font-weight:600;color:#11181c;">메가 이상해꽃</span>
+            <span style="color:#a1a1aa;font-size:16px;margin-right:8px;cursor:pointer;">✕</span>
+            <span style="color:#71717a;font-size:13px;">▾</span>
+          </div>
+        </div>
+        <div style="flex:0 0 58px;">
+          <label style="display:block;font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:6px;">Lv</label>
+          <div style="height:46px;border:1px solid #e4e4e7;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#11181c;">50</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;margin-top:10px;">
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#f4f4f5;padding:5px 11px;border-radius:8px;font-size:12.5px;font-weight:600;color:#52525b;"><span style="width:11px;height:11px;border-radius:4px;background:#63BC5A;"></span>풀</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#f4f4f5;padding:5px 11px;border-radius:8px;font-size:12.5px;font-weight:600;color:#52525b;"><span style="width:11px;height:11px;border-radius:4px;background:#A33EA1;"></span>독</span>
+      </div>
+
+      <!-- moves -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;">
+        <sc-for list="{{ moveSlots }}" as="m" hint-placeholder-count="4">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:6px;">{{ m }}</label>
+            <div style="height:46px;border:1px solid #e4e4e7;border-radius:12px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:13.5px;color:#a1a1aa;">기술 선택<span style="font-size:12px;">▾</span></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- ability / item / nature -->
+      <div style="display:flex;flex-direction:column;gap:13px;margin-top:18px;">
+        <sc-for list="{{ selectSlots }}" as="sel" hint-placeholder-count="3">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:6px;">{{ sel.label }}</label>
+            <div style="height:46px;border:1px solid #e4e4e7;border-radius:12px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:13.5px;color:#a1a1aa;">{{ sel.ph }}<span style="font-size:12px;">▾</span></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- stat table -->
+      <div style="margin-top:22px;">
+        <div style="display:flex;align-items:center;color:#52525b;font-size:12px;font-weight:700;padding-bottom:8px;border-bottom:1px solid #e4e4e7;">
+          <span style="width:64px;">스탯</span><span style="width:38px;text-align:center;">기본</span><span style="flex:1;text-align:center;">노력치 (EV)</span><span style="width:42px;text-align:center;">성격</span><span style="width:42px;text-align:right;">합계</span>
+        </div>
+        <div style="font-size:13px;color:#71717a;margin:11px 0 4px;">남은 노력치 : <b style="color:#11181c;">66 / 66</b></div>
+        <sc-for list="{{ statRows }}" as="r" hint-placeholder-count="6">
+          <div style="display:flex;align-items:center;padding:13px 0;border-bottom:1px solid #f4f4f5;">
+            <span style="width:64px;font-size:13.5px;font-weight:600;color:#11181c;">{{ r.name }}</span>
+            <span style="width:38px;text-align:center;font-size:13.5px;font-weight:700;color:#3f3f46;">{{ r.base }}</span>
+            <div style="flex:1;padding:0 10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:24px;height:24px;border-radius:50%;background:#f4f4f5;display:flex;align-items:center;justify-content:center;font-size:14px;color:#71717a;flex:0 0 auto;">−</span>
+                <div style="flex:1;height:5px;background:#e4e4e7;border-radius:999px;position:relative;">
+                  <div style="position:absolute;left:0;top:50%;transform:translate(-2px,-50%);width:15px;height:15px;border-radius:50%;background:#f97316;box-shadow:0 1px 3px rgba(0,0,0,.2);"></div>
+                </div>
+                <span style="width:24px;height:24px;border-radius:50%;background:#f4f4f5;display:flex;align-items:center;justify-content:center;font-size:14px;color:#71717a;flex:0 0 auto;">+</span>
+              </div>
+              <div style="text-align:center;font-size:12px;color:#a1a1aa;margin-top:3px;">0</div>
+            </div>
+            <span style="width:42px;text-align:center;font-size:12.5px;color:#71717a;">{{ r.nat }}</span>
+            <span style="width:42px;text-align:right;font-size:16px;font-weight:800;color:#11181c;">{{ r.total }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <button style="width:100%;height:52px;margin-top:22px;border:none;border-radius:16px;background:#006FEE;color:#fff;font-size:16px;font-weight:700;font-family:inherit;box-shadow:0 8px 20px rgba(0,111,238,.32);cursor:pointer;">엔트리에 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME — QUIZ GENERATING (loading) ============ -->
+<div style="position:absolute;left:1616px;top:1180px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">퀴즈 생성 중 (로딩)</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">모델이 실시간으로 문제를 만드는 동안</div>
+  <div data-screen-label="Loading" style="width:390px;height:844px;background:#fafafa;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.16);border:1px solid #e4e4e7;">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 34%,#E6F1FE 0%,#fafafa 58%);"></div>
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#11181c;position:relative;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div style="position:absolute;top:44px;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;padding:0 30px;">
+      <div style="flex:0 0 auto;height:54px;"></div>
+
+      <!-- spinning pokeball + running sprite -->
+      <div style="position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;">
+        <svg width="120" height="120" viewBox="0 0 100 100" style="animation:pokeSpin 1.5s ease-in-out infinite;">
+          <circle cx="50" cy="50" r="46" fill="#fff" stroke="#11181c" stroke-width="4"/>
+          <path d="M5 50a45 45 0 0 1 90 0z" fill="#F31260" stroke="#11181c" stroke-width="4"/>
+          <line x1="5" y1="50" x2="95" y2="50" stroke="#11181c" stroke-width="4"/>
+          <circle cx="50" cy="50" r="14" fill="#fff" stroke="#11181c" stroke-width="4"/>
+          <circle cx="50" cy="50" r="6" fill="#e4e4e7"/>
+        </svg>
+      </div>
+
+      <div style="font-size:22px;font-weight:900;color:#11181c;letter-spacing:-.02em;margin-top:30px;text-align:center;">퀴즈 만드는 중<span style="display:inline-flex;gap:3px;margin-left:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#006FEE;display:inline-block;animation:dotBlink 1.2s infinite 0s;"></span><span style="width:5px;height:5px;border-radius:50%;background:#006FEE;display:inline-block;animation:dotBlink 1.2s infinite .2s;"></span><span style="width:5px;height:5px;border-radius:50%;background:#006FEE;display:inline-block;animation:dotBlink 1.2s infinite .4s;"></span></span></div>
+      <div style="font-size:13.5px;color:#71717a;margin-top:7px;text-align:center;line-height:1.5;">내 엔트리와 메타 포켓몬을 비교해<br>최적의 문제를 생성하고 있어요</div>
+
+      <!-- indeterminate progress bar -->
+      <div style="width:100%;height:6px;background:#e9eaec;border-radius:999px;overflow:hidden;margin-top:26px;position:relative;">
+        <div style="position:absolute;top:0;left:0;width:42%;height:100%;background:linear-gradient(90deg,rgba(0,111,238,0),#006FEE,rgba(0,111,238,0));border-radius:999px;animation:barSlide 1.3s ease-in-out infinite;"></div>
+      </div>
+
+      <!-- step checklist -->
+      <div style="width:100%;display:flex;flex-direction:column;gap:11px;margin-top:30px;">
+        <sc-for list="{{ loadSteps }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <sc-if value="{{ s.done }}" hint-placeholder-val="{{ false }}">
+              <span style="width:24px;height:24px;border-radius:50%;background:#17C964;color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">✓</span>
+            </sc-if>
+            <sc-if value="{{ s.active }}" hint-placeholder-val="{{ false }}">
+              <span style="width:24px;height:24px;border-radius:50%;border:2.5px solid #006FEE;border-top-color:transparent;flex:0 0 auto;animation:pokeSpin2 .7s linear infinite;"></span>
+            </sc-if>
+            <sc-if value="{{ s.pending }}" hint-placeholder-val="{{ false }}">
+              <span style="width:24px;height:24px;border-radius:50%;border:2px solid #d4d4d8;flex:0 0 auto;"></span>
+            </sc-if>
+            <span style="font-size:14px;font-weight:700;color:{{ s.color }};">{{ s.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="flex:1;"></div>
+      <div style="font-size:12px;color:#a1a1aa;font-weight:600;text-align:center;margin-bottom:26px;">잠시만 기다려 주세요 · 보통 몇 초면 끝나요</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME — COMPLETE (Duolingo-style) ============ -->
+<div style="position:absolute;left:1616px;top:140px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">퀴즈 완료 화면</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">축하 + 효과음 (🔊 버튼을 눌러보세요)</div>
+  <div data-screen-label="Complete" style="width:390px;height:844px;background:#ffffff;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.16);border:1px solid #e4e4e7;">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,#E6F1FE 0%,#ffffff 60%);"></div>
+    <!-- confetti -->
+    <div style="position:absolute;top:0;left:0;right:0;height:540px;overflow:hidden;pointer-events:none;">
+      <sc-for list="{{ confetti }}" as="c" hint-placeholder-count="0">
+        <span style="position:absolute;top:-20px;left:{{ c.left }}%;width:{{ c.size }}px;height:{{ c.size }}px;background:{{ c.bg }};border-radius:{{ c.round }};animation:confFall {{ c.dur }}s linear {{ c.delay }}s infinite;"></span>
+      </sc-for>
+    </div>
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#11181c;position:relative;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div style="position:absolute;top:44px;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;padding:0 26px;">
+      <div style="margin-top:50px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle at 50% 42%,#E6F1FE 0%,rgba(230,241,254,0) 70%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;animation:popIn .5s cubic-bezier(.2,.9,.3,1.3) both;">
+        <div style="flex:1;display:flex;align-items:flex-end;justify-content:center;">{{ completeImg }}</div>
+        <div style="width:96px;height:14px;border-radius:50%;background:#11181c;animation:shadowPulse 1.6s ease-in-out infinite;margin-top:2px;"></div>
+      </div>
+      <div style="font-size:27px;font-weight:900;color:#11181c;letter-spacing:-.02em;margin-top:22px;">퀴즈 완료!</div>
+      <div style="font-size:14.5px;color:#71717a;margin-top:6px;text-align:center;"><b style="color:#006FEE;">{{ completeName }}</b>와(과) 함께 완주했어요</div>
+
+      <div style="display:flex;align-items:flex-end;gap:6px;margin-top:26px;">
+        <span style="font-size:56px;font-weight:900;color:#17C964;line-height:1;letter-spacing:-.03em;">{{ scoreCorrect }}</span>
+        <span style="font-size:26px;font-weight:800;color:#a1a1aa;line-height:1.5;">/ {{ scoreTotal }}</span>
+      </div>
+
+      <div style="display:flex;gap:10px;width:100%;margin-top:26px;">
+        <div style="flex:1;background:#fff;border:1px solid #e4e4e7;border-radius:16px;padding:14px 10px;text-align:center;box-shadow:0 1px 2px rgba(24,24,27,.04);">
+          <div style="font-size:21px;font-weight:900;color:#17C964;">{{ scoreCorrect }}</div>
+          <div style="font-size:11.5px;font-weight:700;color:#a1a1aa;margin-top:3px;">정답</div>
+        </div>
+        <div style="flex:1;background:#fff;border:1px solid #e4e4e7;border-radius:16px;padding:14px 10px;text-align:center;box-shadow:0 1px 2px rgba(24,24,27,.04);">
+          <div style="font-size:21px;font-weight:900;color:#F31260;">{{ scoreWrong }}</div>
+          <div style="font-size:11.5px;font-weight:700;color:#a1a1aa;margin-top:3px;">오답</div>
+        </div>
+        <div style="flex:1;background:#fff;border:1px solid #e4e4e7;border-radius:16px;padding:14px 10px;text-align:center;box-shadow:0 1px 2px rgba(24,24,27,.04);">
+          <div style="font-size:21px;font-weight:900;color:#006FEE;">{{ scorePct }}</div>
+          <div style="font-size:11.5px;font-weight:700;color:#a1a1aa;margin-top:3px;">정답률</div>
+        </div>
+      </div>
+
+      <div style="flex:1;"></div>
+      <button onClick="{{ playChime }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:48px;border:1px solid #e4e4e7;border-radius:15px;background:#fff;color:#3f3f46;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:11px;">🔊 완료 효과음 듣기</button>
+      <button style="width:100%;height:54px;border:none;border-radius:16px;background:#006FEE;color:#fff;font-size:16.5px;font-weight:800;font-family:inherit;box-shadow:0 8px 20px rgba(0,111,238,.32);cursor:pointer;margin-bottom:24px;">정답 &amp; 해설 보기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME — REVIEW (answers + explanations) ============ -->
+<div style="position:absolute;left:1104px;top:1180px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">정답 &amp; 해설</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">문제별 정답·내 답·공식 해설 (스크롤)</div>
+  <div data-screen-label="Review" style="width:390px;height:844px;background:#f4f4f5;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.16);border:1px solid #e4e4e7;">
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#11181c;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div class="scr" style="position:absolute;top:44px;left:0;right:0;bottom:0;">
+      <div style="padding:16px 20px 6px;display:flex;align-items:center;gap:12px;">
+        <button style="width:36px;height:36px;border-radius:11px;border:1px solid #e4e4e7;background:#fff;font-size:18px;color:#52525b;cursor:pointer;line-height:1;">‹</button>
+        <div style="flex:1;">
+          <div style="font-size:21px;font-weight:800;color:#11181c;letter-spacing:-.02em;">정답 &amp; 해설</div>
+        </div>
+        <div style="background:#11181c;color:#fff;font-size:13px;font-weight:800;padding:6px 12px;border-radius:10px;">{{ scoreCorrect }}/{{ scoreTotal }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:14px 16px 28px;">
+        <sc-for list="{{ review }}" as="r" hint-placeholder-count="5">
+          <div style="background:#fff;border:1px solid #e4e4e7;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(24,24,27,.04);">
+            <div style="display:flex;align-items:center;gap:9px;padding:13px 14px;border-bottom:1px solid #f4f4f5;">
+              <span style="font-size:12.5px;font-weight:800;color:#a1a1aa;letter-spacing:.02em;">문제 {{ r.num }}</span>
+              <div style="flex:1;"></div>
+              <sc-if value="{{ r.got }}" hint-placeholder-val="{{ false }}">
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:800;color:#17C964;background:#DEF7E8;padding:4px 10px;border-radius:999px;">✓ 정답</span>
+              </sc-if>
+              <sc-if value="{{ r.notGot }}" hint-placeholder-val="{{ false }}">
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:800;color:#F31260;background:#FDE0EA;padding:4px 10px;border-radius:999px;">✕ 오답</span>
+              </sc-if>
+            </div>
+            <div style="padding:13px 14px;">
+              <div style="font-size:14.5px;font-weight:700;color:#11181c;line-height:1.35;letter-spacing:-.01em;">{{ r.q }}</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+                <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;">
+                  <div style="width:44px;height:44px;border-radius:11px;background:#E6F1FE;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">{{ r.mineImg }}</div>
+                  <span style="font-size:12.5px;font-weight:700;color:#3f3f46;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.mine.name }}</span>
+                </div>
+                <span style="font-size:11px;font-weight:900;color:#a1a1aa;flex:0 0 auto;">VS</span>
+                <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;justify-content:flex-end;">
+                  <span style="font-size:12.5px;font-weight:700;color:#3f3f46;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.opp.name }}</span>
+                  <div style="width:44px;height:44px;border-radius:11px;background:#FEE7EF;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">{{ r.oppImg }}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:13px;">
+                <div style="flex:1;background:#f4f4f5;border-radius:11px;padding:9px 11px;">
+                  <div style="font-size:10.5px;font-weight:700;color:#a1a1aa;">내 답</div>
+                  <div style="font-size:14px;font-weight:800;color:#11181c;margin-top:2px;">{{ r.userAns }}</div>
+                </div>
+                <div style="flex:1;background:#DEF7E8;border-radius:11px;padding:9px 11px;">
+                  <div style="font-size:10.5px;font-weight:700;color:#0d9b4c;">정답</div>
+                  <div style="font-size:14px;font-weight:800;color:#0d9b4c;margin-top:2px;">{{ r.correctAns }}</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:8px;margin-top:13px;padding:11px 12px;background:#FFF8EC;border:1px solid #FCE6BE;border-radius:12px;">
+                <span style="font-size:14px;flex:0 0 auto;">💡</span>
+                <div style="font-size:12.5px;font-weight:600;color:#92610a;line-height:1.45;">{{ r.explain }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <button style="width:100%;height:52px;border:none;border-radius:16px;background:#006FEE;color:#fff;font-size:16px;font-weight:700;font-family:inherit;box-shadow:0 8px 20px rgba(0,111,238,.32);cursor:pointer;margin-top:4px;">홈으로</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 6 — DARK ENTRY LIST ============ -->
+<div style="position:absolute;left:80px;top:1180px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">엔트리 목록 · 다크</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">다크 모드 토큰</div>
+  <div data-screen-label="EntryListDark" style="width:390px;height:844px;background:#000;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.3);border:1px solid #27272a;">
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#ecedee;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div class="scr" style="position:absolute;top:44px;left:0;right:0;bottom:90px;">
+      <div style="padding:18px 20px 4px;">
+        <div style="font-size:24px;font-weight:800;color:#ecedee;letter-spacing:-.02em;">내 엔트리</div>
+        <div style="font-size:13.5px;color:#a1a1aa;margin-top:3px;">최대 6마리</div>
+      </div>
+      <div class="scr" style="display:flex;gap:7px;padding:8px 16px 4px;">
+        <span style="flex:0 0 auto;align-self:center;font-size:12px;font-weight:700;color:#71717a;margin-right:2px;">표시</span>
+        <sc-for list="{{ statChipsD }}" as="s" hint-placeholder-count="6">
+          <button onClick="{{ s.onClick }}" style="flex:0 0 auto;height:32px;padding:0 13px;border-radius:999px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.color }};font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;">{{ s.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 16px 24px;">
+        <sc-for list="{{ entries }}" as="e" hint-placeholder-count="5">
+          <div style="background:#18181b;border:1px solid #27272a;border-radius:18px;padding:12px 12px 13px;position:relative;">
+            <div style="position:absolute;top:10px;right:10px;background:#27272a;color:#d4d4d8;font-size:11px;font-weight:700;padding:3px 7px;border-radius:7px;">Lv {{ e.lv }}</div>
+            <div style="height:96px;display:flex;align-items:center;justify-content:center;background:#0c0c0e;border-radius:14px;">
+              {{ e.spriteImg }}
+            </div>
+            <div style="font-size:14.5px;font-weight:700;color:#ecedee;margin-top:8px;text-align:center;line-height:1.2;">{{ e.name }}</div>
+            <div style="display:flex;gap:5px;justify-content:center;margin-top:7px;">
+              <sc-for list="{{ e.types }}" as="t" hint-placeholder-count="2">
+                <span style="display:inline-flex;align-items:center;gap:4px;background:#27272a;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#d4d4d8;white-space:nowrap;"><span style="width:9px;height:9px;border-radius:3px;background:{{ t.c }};"></span>{{ t.n }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid #27272a;">
+              <span style="font-size:11.5px;color:#71717a;font-weight:600;">{{ stat }}</span>
+              <span style="font-size:17px;font-weight:800;color:#4d9bff;">{{ e.statVal }}</span>
+            </div>
+          </div>
+        </sc-for>
+        <div style="background:#101012;border:1.5px dashed #3f3f46;border-radius:18px;min-height:206px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#71717a;">
+          <div style="width:46px;height:46px;border-radius:14px;background:#27272a;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:300;color:#a1a1aa;line-height:1;">+</div>
+          <div style="font-size:13px;font-weight:600;">포켓몬 추가</div>
+          <div style="font-size:11px;color:#52525b;">6마리 중 5마리</div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,#000 38%);display:flex;align-items:center;padding:0 20px 16px;">
+      <button style="flex:1;height:52px;border:none;border-radius:16px;background:#006FEE;color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;">퀴즈 시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 7 — DARK SWIPE A ============ -->
+<div style="position:absolute;left:592px;top:1180px;width:392px;">
+  <div data-drags-parent="1" style="font-size:13px;font-weight:700;color:#3f3f46;margin-bottom:4px;letter-spacing:-.01em;">스피드 퀴즈 A안 · 다크</div>
+  <div data-drags-parent="1" style="font-size:12px;color:#a1a1aa;margin-bottom:14px;">드래그 가능</div>
+  <div data-screen-label="SwipeADark" style="width:390px;height:844px;background:#000;border-radius:42px;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(24,24,27,.3);border:1px solid #27272a;">
+    <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;color:#ecedee;">
+      <span>9:41</span><span style="font-size:12px;letter-spacing:2px;">▮▮▮ 􀙥</span>
+    </div>
+    <div style="position:absolute;top:44px;left:0;right:0;bottom:0;display:flex;flex-direction:column;">
+      <div style="padding:14px 20px 6px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;font-weight:700;color:#09090b;background:{{ qD.diffColor }};padding:4px 11px;border-radius:999px;">{{ qD.diff }}</span>
+        <span style="font-size:13px;font-weight:700;color:#52525b;">{{ progD }}</span>
+      </div>
+      <div style="padding:6px 22px 10px;text-align:center;">
+        <div style="font-size:20px;font-weight:800;color:#ecedee;letter-spacing:-.02em;line-height:1.3;text-wrap:balance;">{{ qD.q }}</div>
+        <div style="font-size:13px;color:#71717a;margin-top:5px;">속도 수치는 숨겨져 있어요 · 변수만 보고 판단</div>
+      </div>
+      <div style="flex:1;position:relative;margin:0 18px;display:flex;align-items:center;justify-content:center;">
+        <div style="position:absolute;left:26px;right:26px;height:496px;background:#18181b;border:1px solid #27272a;border-radius:26px;transform:scale(.94) translateY(6px);"></div>
+        <div onPointerDown="{{ onDownD }}" style="position:relative;width:100%;height:500px;background:#18181b;border:1px solid #2c2c30;border-radius:26px;box-shadow:0 14px 34px rgba(0,0,0,.5);transform:{{ tD }};transition:{{ transD }};touch-action:none;cursor:grab;padding:24px 20px;display:flex;flex-direction:column;">
+          <div style="position:absolute;top:22px;left:22px;border:4px solid #17C964;color:#17C964;font-size:24px;font-weight:900;padding:3px 13px;border-radius:11px;transform:rotate(-16deg);opacity:{{ yesD }};">예 ✓</div>
+          <div style="position:absolute;top:22px;right:22px;border:4px solid #ff4d7d;color:#ff4d7d;font-size:24px;font-weight:900;padding:3px 13px;border-radius:11px;transform:rotate(16deg);opacity:{{ noD }};">아니오 ✕</div>
+          <div style="display:flex;align-items:stretch;justify-content:space-between;position:relative;margin-top:10px;">
+            <div style="flex:1;text-align:center;">
+              <div style="font-size:10.5px;font-weight:800;color:#4d9bff;letter-spacing:.04em;">MY</div>
+              <div style="height:120px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 60%,rgba(0,111,238,.22) 0%,rgba(0,111,238,0) 72%);">
+                {{ mineImgD }}
+              </div>
+              <div style="font-size:14px;font-weight:800;color:#ecedee;line-height:1.15;margin-top:2px;">{{ qD.mine.name }}</div>
+              <div style="display:flex;gap:4px;justify-content:center;margin-top:6px;">
+                <sc-for list="{{ qD.mine.types }}" as="t" hint-placeholder-count="2"><span style="width:18px;height:18px;border-radius:6px;background:{{ t.c }};"></span></sc-for>
+              </div>
+            </div>
+            <div style="position:absolute;left:50%;top:46px;transform:translateX(-50%);width:40px;height:40px;border-radius:50%;background:#fff;color:#09090b;font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;z-index:2;border:3px solid #18181b;">VS</div>
+            <div style="flex:1;text-align:center;">
+              <div style="font-size:10.5px;font-weight:800;color:#ff6b93;letter-spacing:.04em;">META</div>
+              <div style="height:120px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 60%,rgba(243,18,96,.2) 0%,rgba(243,18,96,0) 72%);">
+                {{ oppImgD }}
+              </div>
+              <div style="font-size:14px;font-weight:800;color:#ecedee;line-height:1.15;margin-top:2px;">{{ qD.opp.name }}</div>
+              <div style="display:flex;gap:4px;justify-content:center;margin-top:6px;">
+                <sc-for list="{{ qD.opp.types }}" as="t" hint-placeholder-count="2"><span style="width:18px;height:18px;border-radius:6px;background:{{ t.c }};"></span></sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;margin-top:12px;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="width:46px;height:46px;border-radius:50%;background:#27272a;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#71717a;">?</div>
+              <span style="font-size:10.5px;font-weight:700;color:#71717a;">속도</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="width:46px;height:46px;border-radius:50%;background:#27272a;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#71717a;">?</div>
+              <span style="font-size:10.5px;font-weight:700;color:#71717a;">속도</span>
+            </div>
+          </div>
+          <div style="margin-top:auto;padding-top:16px;border-top:1px solid #27272a;">
+            <div style="font-size:11px;font-weight:700;color:#71717a;margin-bottom:8px;">적용 변수</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <sc-for list="{{ qD.chips }}" as="c" hint-placeholder-count="2">
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#27272a;color:#d4d4d8;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;white-space:nowrap;"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.c }};"></span>{{ c.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ showCorrectD }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;border-radius:26px;background:rgba(23,201,100,.95);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+              <div style="font-size:54px;line-height:1;">✓</div><div style="font-size:22px;font-weight:900;margin-top:10px;">정답!</div>
+              <div style="font-size:13.5px;font-weight:600;margin-top:10px;line-height:1.4;">{{ resultTextD }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showWrongD }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:0;border-radius:26px;background:rgba(243,18,96,.95);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+              <div style="font-size:54px;line-height:1;">✕</div><div style="font-size:22px;font-weight:900;margin-top:10px;">오답</div>
+              <div style="font-size:13.5px;font-weight:600;margin-top:10px;line-height:1.4;">{{ resultTextD }}</div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:18px;padding:14px 0 28px;">
+        <span style="font-size:13.5px;font-weight:700;color:#ff6b93;">← 아니오</span>
+        <span style="width:4px;height:4px;border-radius:50%;background:#3f3f46;"></span>
+        <span style="font-size:13.5px;font-weight:700;color:#34d77f;">예 →</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { dragXA:0, dragXD:0, idxA:0, idxD:0,
+    draggingA:false, draggingD:false, stat:'스피드',
+    resultA:'', resultD:'', resultTextA:'', resultTextD:'' };
+
+  questions = [
+    { q:'내 토게키스가 무쇠손보다 빠를까?', diff:'쉬움', diffColor:'#17C964',
+      mine:{name:'토게키스', id:468, types:[{n:'페어리',c:'#D685AD'},{n:'비행',c:'#A98FF3'}]},
+      opp:{name:'무쇠손', id:992, types:[{n:'격투',c:'#C22E28'},{n:'전기',c:'#F7D02C'}]},
+      chips:[{label:'베이스 속도 비교', c:'#17C964'}], answer:true,
+      explain:'토게키스 80 > 무쇠손 50 → 예' },
+    { q:'내 어흥염이 한카리아스보다 빠를까?', diff:'보통', diffColor:'#006FEE',
+      mine:{name:'어흥염', id:727, types:[{n:'불꽃',c:'#EE8130'},{n:'악',c:'#705746'}]},
+      opp:{name:'한카리아스', id:445, types:[{n:'드래곤',c:'#6F35FC'},{n:'땅',c:'#E2BF65'}]},
+      chips:[{label:'베이스 속도', c:'#a1a1aa'},{label:'구애스카프 ×1.5', c:'#006FEE'}], answer:false,
+      explain:'어흥염 60×1.5=90 < 한카리아스 102 → 아니오' },
+    { q:'내 메가 이상해꽃이 무쇠보따리보다 빠를까?', diff:'어려움', diffColor:'#F5A524',
+      mine:{name:'메가 이상해꽃', id:10033, types:[{n:'풀',c:'#63BC5A'},{n:'독',c:'#A33EA1'}]},
+      opp:{name:'무쇠보따리', id:991, types:[{n:'물',c:'#6390F0'},{n:'얼음',c:'#96D9D6'}]},
+      chips:[{label:'쾌청 · 엽록소 ×2', c:'#F5A524'}], answer:true,
+      explain:'엽록소+쾌청 80×2=160 > 무쇠보따리 136 → 예' },
+    { q:'내 한카리아스가 우라오스보다 빠를까?', diff:'보통', diffColor:'#006FEE',
+      mine:{name:'한카리아스', id:445, types:[{n:'드래곤',c:'#6F35FC'},{n:'땅',c:'#E2BF65'}]},
+      opp:{name:'우라오스', id:892, types:[{n:'격투',c:'#C22E28'},{n:'악',c:'#705746'}]},
+      chips:[{label:'속도 ▼ 1랭크', c:'#F31260'}], answer:false,
+      explain:'한카리아스 102×2/3≈68 < 우라오스 97 → 아니오' },
+    { q:'내 갸라도스가 무쇠손보다 빠를까?', diff:'마스터', diffColor:'#F31260',
+      mine:{name:'갸라도스', id:130, types:[{n:'물',c:'#6390F0'},{n:'비행',c:'#A98FF3'}]},
+      opp:{name:'무쇠손', id:992, types:[{n:'격투',c:'#C22E28'},{n:'전기',c:'#F7D02C'}]},
+      chips:[{label:'마비 ÷2', c:'#F5A524'}], answer:false,
+      explain:'갸라도스 81÷2≈40 < 무쇠손 50 → 아니오' },
+  ];
+
+  entries = [
+    {id:10033,name:'메가 이상해꽃',lv:50,types:[{n:'풀',c:'#63BC5A'},{n:'독',c:'#A33EA1'}],stats:{'HP':80,'공격':100,'방어':123,'특공':122,'특방':120,'스피드':80}},
+    {id:727,name:'어흥염',lv:50,types:[{n:'불꽃',c:'#EE8130'},{n:'악',c:'#705746'}],stats:{'HP':95,'공격':115,'방어':90,'특공':80,'특방':90,'스피드':60}},
+    {id:468,name:'토게키스',lv:50,types:[{n:'페어리',c:'#D685AD'},{n:'비행',c:'#A98FF3'}],stats:{'HP':85,'공격':50,'방어':95,'특공':120,'특방':115,'스피드':80}},
+    {id:445,name:'한카리아스',lv:50,types:[{n:'드래곤',c:'#6F35FC'},{n:'땅',c:'#E2BF65'}],stats:{'HP':108,'공격':130,'방어':95,'특공':80,'특방':85,'스피드':102}},
+    {id:184,name:'마릴리',lv:50,types:[{n:'물',c:'#6390F0'},{n:'페어리',c:'#D685AD'}],stats:{'HP':100,'공격':50,'방어':80,'특공':60,'특방':80,'스피드':50}},
+  ];
+  STATS = ['스피드','HP','공격','방어','특공','특방'];
+
+  // 로딩 화면 단계 메시지
+  loadSteps = [
+    { label:'메타 포켓몬 불러오는 중', done:true,  active:false, pending:false, color:'#3f3f46' },
+    { label:'스피드 공식 계산 중',     done:true,  active:false, pending:false, color:'#3f3f46' },
+    { label:'문제 만드는 중',          done:false, active:true,  pending:false, color:'#006FEE' },
+    { label:'정답 · 해설 준비 중',     done:false, active:false, pending:true,  color:'#a1a1aa' },
+  ];
+
+  // 콘페티 조각 (1회 생성)
+  confetti = Array.from({length:26}, (_,i)=>{
+    const cols=['#006FEE','#17C964','#F5A524','#F31260','#7828C8','#0EA5E9'];
+    return { i, left: Math.round(Math.random()*100),
+      bg: cols[i % cols.length],
+      delay: (Math.random()*0.6).toFixed(2),
+      dur: (1.6 + Math.random()*1.2).toFixed(2),
+      size: 7 + Math.round(Math.random()*5),
+      rot: Math.round(Math.random()*360),
+      round: i % 3 === 0 ? '50%' : '2px' };
+  });
+
+  // 모의 결과: 각 문제를 맞췄는지
+  results = [true, true, false, true, false];
+
+  // 완료 화면용: 움직이는 스프라이트가 있는 엔트리(전국도감 ≤649, 일반폼) 중 랜덤 1마리
+  completeMon = (()=>{
+    const animatable = this.entries.filter(e => e.id <= 649);
+    const pool = animatable.length ? animatable : this.entries;
+    return pool[Math.floor(Math.random() * pool.length)];
+  })();
+
+  _animSprite(id){
+    const gif = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${id}.gif`;
+    const fallback = this._art(id);
+    return React.createElement('img', {
+      src: gif,
+      onError: (e)=>{ if(e.target.src !== fallback){ e.target.style.imageRendering='auto'; e.target.src = fallback; } },
+      style: { width:'118px', height:'118px', objectFit:'contain', imageRendering:'pixelated', animation:'bob 1.6s ease-in-out infinite' }
+    });
+  }
+
+  playChime(){
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AC();
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((f,i)=>{
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.value = f;
+        o.connect(g); g.connect(ctx.destination);
+        const t = ctx.currentTime + i*0.11;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.28, t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0008, t+0.32);
+        o.start(t); o.stop(t+0.34);
+      });
+    }catch(e){}
+  }
+
+  diffs = [
+    {n:1,name:'쉬움',desc:'베이스 속도만 비교 · 스피드 티어 참조',tags:['베이스 속도'],color:'#17C964',soft:'#DEF7E8',ring:'#e4e4e7',selected:false},
+    {n:2,name:'보통',desc:'+ 지닌 물건, 랭크 업/다운',tags:['베이스 속도','지닌 물건','랭크 ▲▼'],color:'#006FEE',soft:'#E6F1FE',ring:'#006FEE',selected:true},
+    {n:3,name:'어려움',desc:'+ 날씨, 특성, 노력치/성격',tags:['+ 날씨','특성','노력치/성격'],color:'#F5A524',soft:'#FEF3DC',ring:'#e4e4e7',selected:false},
+    {n:4,name:'마스터',desc:'+ 마비 등 특수 상태이상까지 전부',tags:['+ 상태이상','전체 변수'],color:'#F31260',soft:'#FDE0EA',ring:'#e4e4e7',selected:false},
+  ];
+
+  moveSlots = ['기술 1','기술 2','기술 3','기술 4'];
+  selectSlots = [{label:'특성',ph:'특성 선택'},{label:'지닌 물건',ph:'지닌 물건 선택'},{label:'성격',ph:'성격 선택'}];
+  statRows = [
+    {name:'HP',base:80,ev:0,nat:'×1.0',total:155},
+    {name:'공격',base:100,ev:0,nat:'×1.0',total:120},
+    {name:'방어',base:123,ev:0,nat:'×1.0',total:143},
+    {name:'특공',base:122,ev:0,nat:'×1.0',total:142},
+    {name:'특방',base:120,ev:0,nat:'×1.0',total:140},
+    {name:'스피드',base:80,ev:0,nat:'×1.0',total:100},
+  ];
+
+  _start(key, e){
+    const sx = e.clientX;
+    const dragField = 'dragX'+key, dragging = 'dragging'+key;
+    this.setState({ [dragging]: true });
+    const move = (ev)=>{ this.setState({ [dragField]: ev.clientX - sx }); };
+    const up = (ev)=>{
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      const dx = ev.clientX - sx;
+      this.setState({ [dragging]: false });
+      if(Math.abs(dx) > 100){ this._commit(key, dx > 0); }
+      else { this.setState({ [dragField]: 0 }); }
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  _commit(key, yes){
+    const L = this.questions.length;
+    const idxField = 'idx'+key, dragField = 'dragX'+key, resField = 'result'+key, txtField = 'resultText'+key;
+    const idx = this.state[idxField];
+    const cur = this.questions[idx % L];
+    const correct = (yes === cur.answer);
+    this.setState({ [dragField]: yes ? 480 : -480, ['dragging'+key]:false, [resField]: correct?'correct':'wrong', [txtField]: cur.explain });
+    setTimeout(()=>{ this.setState({ [idxField]: idx + 1, [dragField]: 0 }); }, 300);
+    setTimeout(()=>{ this.setState({ [resField]: '' }); }, 1200);
+  }
+
+  // 일부 신세대/특수폼은 official-artwork가 저장소에 없어 기본 스프라이트로 대체
+  NO_ARTWORK = new Set([991]);
+  _art(id){
+    if(this.NO_ARTWORK.has(id)) return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+  }
+  _spr(id){ return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`; }
+
+  renderVals(){
+    const s = this.state;
+    const L = this.questions.length;
+    const spr = (id)=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+    const imgEl = (url, px, extra, fallbackId)=> React.createElement('img', { src:url, draggable:false,
+      onError: fallbackId!=null ? (e)=>{ const fb=spr(fallbackId); if(e.target.src!==fb){ e.target.style.imageRendering='pixelated'; e.target.src=fb; } } : undefined,
+      style:Object.assign({ width:px, height:px, objectFit:'contain' }, extra||{}) });
+    const stat = this.state.stat;
+    this.entries.forEach(e=>{ e.spriteImg = imgEl(this._spr(e.id), '84px'); e.statVal = e.stats[stat]; });
+    const mkChips = (dark)=> this.STATS.map(label=>{
+      const active = stat === label;
+      return { label, onClick:()=>this.setState({ stat: label }), active,
+        bg: active ? '#006FEE' : (dark ? '#27272a' : '#fff'),
+        color: active ? '#fff' : (dark ? '#d4d4d8' : '#52525b'),
+        border: active ? '#006FEE' : (dark ? '#3f3f46' : '#e4e4e7') };
+    });
+    const clamp = (v)=>Math.max(0, Math.min(1, v));
+    const view = (key, idxField, dragField, px, extra)=>{
+      const q = this.questions[s[idxField] % L];
+      const dx = s[dragField];
+      return {
+        ['q'+key]: q,
+        ['mineImg'+key]: imgEl(this._art(q.mine.id), px, extra, q.mine.id),
+        ['oppImg'+key]: imgEl(this._art(q.opp.id), px, extra, q.opp.id),
+        ['t'+key]: `translateX(${dx}px) rotate(${dx*0.04}deg)`,
+        ['trans'+key]: s['dragging'+key] ? 'none' : 'transform .3s cubic-bezier(.2,.7,.3,1)',
+        ['yes'+key]: clamp(dx/100),
+        ['no'+key]: clamp(-dx/100),
+        ['prog'+key]: `${(s[idxField] % L) + 1} / ${L}`,
+        ['showCorrect'+key]: s['result'+key]==='correct',
+        ['showWrong'+key]: s['result'+key]==='wrong',
+        ['resultText'+key]: s['resultText'+key],
+        ['onDown'+key]: (e)=>this._start(key, e),
+        ['yesBtn'+key]: ()=>this._commit(key, true),
+        ['noBtn'+key]: ()=>this._commit(key, false),
+      };
+    };
+    const correct = this.results.filter(Boolean).length;
+    const total = this.results.length;
+    const review = this.questions.map((q,i)=>({
+      ...q,
+      mineImg: imgEl(this._art(q.mine.id), '52px', null, q.mine.id),
+      oppImg: imgEl(this._art(q.opp.id), '52px', null, q.opp.id),
+      got: this.results[i],
+      notGot: !this.results[i],
+      userAns: this.results[i] ? (q.answer?'예':'아니오') : (q.answer?'아니오':'예'),
+      correctAns: q.answer ? '예' : '아니오',
+      num: String(i+1).padStart(2,'0'),
+    }));
+    return {
+      entries: this.entries,
+      stat,
+      statChips: mkChips(false),
+      statChipsD: mkChips(true),
+      confetti: this.confetti,
+      loadSteps: this.loadSteps,
+      loadImg: this._animSprite(this.completeMon.id),
+      completeImg: this._animSprite(this.completeMon.id),
+      completeName: this.completeMon.name,
+      playChime: ()=>this.playChime(),
+      scoreCorrect: correct,
+      scoreTotal: total,
+      scorePct: Math.round(correct/total*100) + '%',
+      scoreWrong: total - correct,
+      review,
+      diffs: this.diffs,
+      moveSlots: this.moveSlots,
+      selectSlots: this.selectSlots,
+      statRows: this.statRows,
+      ...view('A','idxA','dragXA','104px'),
+      ...view('D','idxD','dragXD','104px'),
+    };
+  }
+}
+</script>
+</body>
+</html>

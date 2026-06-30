@@ -23,34 +23,7 @@ def _image_assets(national_dex_number: int) -> PokemonImageAssets:
 
 DEFAULT_TEAM = UserTeam(
     teamName="main",
-    members=[
-        TeamMember(
-            slot=1,
-            pokemonId="garchomp",
-            pokemonName="한카리아스",
-            nationalDexNumber=445,
-            imageAssets=_image_assets(445),
-            baseStatsSnapshot=_stats(108, 130, 95, 80, 85, 102),
-            nature="Jolly",
-            ability="Rough Skin",
-            item="Choice Scarf",
-            evs=StatSpread(),
-            ivs=IvSpread(),
-        ),
-        TeamMember(
-            slot=2,
-            pokemonId="dragonite",
-            pokemonName="Dragonite",
-            nationalDexNumber=149,
-            imageAssets=_image_assets(149),
-            baseStatsSnapshot=_stats(91, 134, 95, 100, 100, 80),
-            nature="Jolly",
-            ability="Multiscale",
-            item="Loaded Dice",
-            evs=StatSpread(),
-            ivs=IvSpread(),
-        ),
-    ],
+    members=[],
 )
 
 DEFAULT_META = [

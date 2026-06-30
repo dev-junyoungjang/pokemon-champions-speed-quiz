@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
 from app.core.settings import Settings
+
+logger = logging.getLogger(__name__)
 
 
 class AiQuestionError(RuntimeError):
@@ -40,7 +43,9 @@ class OpenAiResponsesClient:
         body = {
             "model": model,
             "instructions": instructions,
-            "input": json.dumps(input_payload, ensure_ascii=False),
+            # Responses API requires the literal word "json" in the input when
+            # text.format is json_object; instructions alone don't satisfy it.
+            "input": "Respond in JSON.\n" + json.dumps(input_payload, ensure_ascii=False),
             "text": {"format": {"type": "json_object"}},
         }
         request = urllib.request.Request(
@@ -57,17 +62,22 @@ class OpenAiResponsesClient:
                 payload = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
+            logger.warning("OpenAI request failed (model=%s, status=%s): %s", model, exc.code, detail[:500])
             raise AiQuestionError(f"OpenAI request failed with {exc.code}: {detail[:500]}") from exc
         except urllib.error.URLError as exc:
+            logger.warning("OpenAI request failed (model=%s): %s", model, exc)
             raise AiQuestionError(f"OpenAI request failed: {exc}") from exc
 
         text = self._extract_output_text(payload)
         try:
             parsed = json.loads(text)
         except json.JSONDecodeError as exc:
+            logger.warning("OpenAI response was not valid JSON (model=%s): %s", model, text[:500])
             raise AiQuestionError(f"OpenAI response was not valid JSON: {text[:500]}") from exc
         if not isinstance(parsed, dict):
+            logger.warning("OpenAI response JSON was not an object (model=%s): %s", model, text[:500])
             raise AiQuestionError("OpenAI response JSON must be an object")
+        logger.info("OpenAI request ok (model=%s): %s", model, json.dumps(parsed, ensure_ascii=False)[:1000])
         return parsed
 
     def _extract_output_text(self, payload: dict[str, Any]) -> str:
