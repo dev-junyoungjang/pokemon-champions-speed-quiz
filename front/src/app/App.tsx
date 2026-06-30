@@ -1397,6 +1397,16 @@ function KoreanName({ member }: { member: TeamMember }) {
   return <>{member.pokemonName || '포켓몬 추가'}</>
 }
 
+type EntryStatKey = keyof TeamMember['baseStatsSnapshot']
+const entryStatOptions: Array<[EntryStatKey, string]> = [
+  ['spe', '스피드'],
+  ['hp', 'HP'],
+  ['atk', '공격'],
+  ['def', '방어'],
+  ['spa', '특공'],
+  ['spd', '특방'],
+]
+
 function EntryScreen({
   teamDraft,
   onStart,
@@ -1408,6 +1418,9 @@ function EntryScreen({
   onOpenCreate: (slot: number) => void
   startError?: string | null
 }) {
+  const [selectedStat, setSelectedStat] = useState<EntryStatKey>('spe')
+  const selectedStatLabel = entryStatOptions.find(([stat]) => stat === selectedStat)?.[1] ?? '스피드'
+
   return (
     <>
       <Header>
@@ -1419,8 +1432,8 @@ function EntryScreen({
 
       <FilterRow>
         <TinyLabel>표시</TinyLabel>
-        {['스피드', 'HP', '공격', '방어', '특공', '특방'].map((label, index) => (
-          <Pill key={label} active={index === 0}>{label}</Pill>
+        {entryStatOptions.map(([stat, label]) => (
+          <Pill key={stat} active={selectedStat === stat} type="button" onClick={() => setSelectedStat(stat)}>{label}</Pill>
         ))}
       </FilterRow>
 
@@ -1445,8 +1458,8 @@ function EntryScreen({
                     <TypeDot color={typeColors[(index + 1) % typeColors.length]} />
                   </TypeRow>
                   <StatLine>
-                    <span>스피드</span>
-                    <strong>{member.baseStatsSnapshot.spe}</strong>
+                    <span>{selectedStatLabel}</span>
+                    <strong>{member.baseStatsSnapshot[selectedStat]}</strong>
                   </StatLine>
                 </>
               ) : (
@@ -1455,7 +1468,7 @@ function EntryScreen({
                   <EntryName>포켓몬 추가</EntryName>
                   <TypeRow />
                   <StatLine>
-                    <span>스피드</span>
+                    <span>{selectedStatLabel}</span>
                     <strong>-</strong>
                   </StatLine>
                 </>
