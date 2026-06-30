@@ -1349,8 +1349,11 @@ function handleMascotError(event: SyntheticEvent<HTMLImageElement>, member: Team
   }
 }
 
-function answerLabel(answer: boolean) {
-  return answer ? '예' : '아니오'
+// true = subject (MY, left) is faster; false = opponent (META, right) is faster.
+function fasterPokemonName(question: QuizQuestion, subjectFaster: boolean) {
+  return subjectFaster
+    ? question.subject.build.pokemonName
+    : question.opponent.build.pokemonName
 }
 
 function buildQuizSummary(answers: QuizDraftAnswer[]): QuizSummary {
@@ -1775,7 +1778,7 @@ function ReviewScreen({ answers, onHome }: { answers: QuizDraftAnswer[]; onHome:
                 <span>문제 {String(index + 1).padStart(2, '0')}</span>
                 <ResultBadge correct={correct}>{correct ? '✓ 정답' : '✕ 오답'}</ResultBadge>
               </ReviewCardTop>
-              <ReviewQuestion>{item.question.statement}</ReviewQuestion>
+              <ReviewQuestion>둘 중 더 빠른 포켓몬은?</ReviewQuestion>
               <MiniMatchup>
                 <MiniPokemon>
                   <img src={artworkUrl(item.question.subject.build) ?? undefined} alt={item.question.subject.build.pokemonName} onError={(event) => handleImageError(event, item.question.subject.build)} />
@@ -1788,8 +1791,8 @@ function ReviewScreen({ answers, onHome }: { answers: QuizDraftAnswer[]; onHome:
                 </MiniPokemon>
               </MiniMatchup>
               <AnswerCompare>
-                <AnswerBox>내 답<strong>{answerLabel(item.answer)}</strong></AnswerBox>
-                <AnswerBox>정답<strong>{answerLabel(item.question.correctAnswer)}</strong></AnswerBox>
+                <AnswerBox>내 선택<strong>{fasterPokemonName(item.question, item.answer)}</strong></AnswerBox>
+                <AnswerBox>더 빠른 쪽<strong>{fasterPokemonName(item.question, item.question.correctAnswer)}</strong></AnswerBox>
               </AnswerCompare>
               <ExplanationBox>💡 {item.question.explanation}</ExplanationBox>
             </ReviewCard>
