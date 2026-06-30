@@ -21,6 +21,8 @@ def test_pokemon_species_lookup_by_korean_name() -> None:
     assert species["nationalDexNumber"] == 25
     assert species["baseStats"]["spe"] == 90
     assert species["types"] == ["electric"]
+    assert species["availableAbilities"][0]["abilityId"] == "static"
+    assert species["availableAbilities"][0]["nameKo"] == "정전기"
     assert species["availableMoves"][0]["moveId"] == "thunderbolt"
     assert species["availableMoves"][0]["nameKo"] == "10만볼트"
     assert species["imageAssets"]["primaryArtworkUrl"].endswith("/025.png")
@@ -64,21 +66,40 @@ def test_dynamodb_species_loader_reads_pokemon_species_table(monkeypatch) -> Non
         "types": ["electric"],
     }
 
+    options_item = {
+        "pk": pokemon_species.REGULATION_OPTIONS_PK,
+        "sk": "POKEMON#pikachu",
+        "pokemonId": "pikachu",
+        "availableAbilities": [
+            {"abilityId": "static", "nameEn": "Static", "nameKo": "정전기", "slot": 1, "hidden": False}
+        ],
+        "availableMoves": [
+            {"moveId": "thunderbolt", "nameEn": "Thunderbolt", "nameKo": "10만볼트", "type": "electric"}
+        ],
+    }
+
     class FakeTable:
+        def __init__(self, items):
+            self.items = items
+
         def query(self, **kwargs):
             assert kwargs["KeyConditionExpression"] is not None
-            return {"Items": [item]}
+            return {"Items": self.items}
 
     class FakeDynamodb:
         def Table(self, table_name: str):
-            assert table_name == "pokemon-species"
-            return FakeTable()
+            if table_name == "pokemon-species":
+                return FakeTable([item])
+            if table_name == "pokemon-options":
+                return FakeTable([options_item])
+            raise AssertionError(f"unexpected table {table_name}")
 
     monkeypatch.setattr(pokemon_species.boto3, "resource", lambda *args, **kwargs: FakeDynamodb())
 
-    species = pokemon_species.load_dynamodb_regulation_species("pokemon-species", "ap-northeast-2")
+    species = pokemon_species.load_dynamodb_regulation_species("pokemon-species", "ap-northeast-2", "pokemon-options")
 
     assert len(species) == 1
     assert species[0].pokemon_id == "pikachu"
     assert species[0].name_ko == "피카츄"
+    assert species[0].available_abilities[0].ability_id == "static"
     assert species[0].available_moves[0].move_id == "thunderbolt"

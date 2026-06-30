@@ -1,0 +1,64 @@
+[
+  {
+    "pk": "OPTIONS#pokemon_champions#REGULATION#M-B",
+    "sk": "POKEMON#pikachu",
+    "entityType": "PokemonBattleOptions",
+    "ruleset": "pokemon_champions",
+    "regulationSet": "M-B",
+    "pokemonId": "pikachu",
+    "availableAbilities": [
+      {"abilityId": "static", "nameEn": "Static", "nameKo": "정전기", "slot": 1, "hidden": false},
+      {"abilityId": "lightning-rod", "nameEn": "Lightning Rod", "nameKo": "피뢰침", "slot": 3, "hidden": true}
+    ],
+    "availableMoves": [
+      {"moveId": "thunderbolt", "nameEn": "Thunderbolt", "nameKo": "10만볼트", "type": "electric", "damageClass": "special", "power": 90, "accuracy": 100},
+      {"moveId": "volt-switch", "nameEn": "Volt Switch", "nameKo": "볼트체인지", "type": "electric", "damageClass": "special", "power": 70, "accuracy": 100},
+      {"moveId": "quick-attack", "nameEn": "Quick Attack", "nameKo": "전광석화", "type": "normal", "damageClass": "physical", "power": 40, "accuracy": 100},
+      {"moveId": "iron-tail", "nameEn": "Iron Tail", "nameKo": "아이언테일", "type": "steel", "damageClass": "physical", "power": 100, "accuracy": 75},
+      {"moveId": "electro-ball", "nameEn": "Electro Ball", "nameKo": "일렉트릭볼", "type": "electric", "damageClass": "special", "power": null, "accuracy": 100},
+      {"moveId": "thunder-wave", "nameEn": "Thunder Wave", "nameKo": "전기자석파", "type": "electric", "damageClass": "status", "power": null, "accuracy": 90},
+      {"moveId": "nuzzle", "nameEn": "Nuzzle", "nameKo": "볼부비부비", "type": "electric", "damageClass": "physical", "power": 20, "accuracy": 100},
+      {"moveId": "surf", "nameEn": "Surf", "nameKo": "파도타기", "type": "water", "damageClass": "special", "power": 90, "accuracy": 100}
+    ]
+  },
+  {
+    "pk": "OPTIONS#pokemon_champions#REGULATION#M-B",
+    "sk": "POKEMON#charizard",
+    "entityType": "PokemonBattleOptions",
+    "ruleset": "pokemon_champions",
+    "regulationSet": "M-B",
+    "pokemonId": "charizard",
+    "availableAbilities": [
+      {"abilityId": "blaze", "nameEn": "Blaze", "nameKo": "맹화", "slot": 1, "hidden": false},
+      {"abilityId": "solar-power", "nameEn": "Solar Power", "nameKo": "선파워", "slot": 3, "hidden": true}
+    ],
+    "availableMoves": [
+      {"moveId": "flamethrower", "nameEn": "Flamethrower", "nameKo": "화염방사", "type": "fire", "damageClass": "special", "power": 90, "accuracy": 100},
+      {"moveId": "air-slash", "nameEn": "Air Slash", "nameKo": "에어슬래시", "type": "flying", "damageClass": "special", "power": 75, "accuracy": 95},
+      {"moveId": "dragon-pulse", "nameEn": "Dragon Pulse", "nameKo": "용의파동", "type": "dragon", "damageClass": "special", "power": 85, "accuracy": 100},
+      {"moveId": "solar-beam", "nameEn": "Solar Beam", "nameKo": "솔라빔", "type": "grass", "damageClass": "special", "power": 120, "accuracy": 100},
+      {"moveId": "fire-blast", "nameEn": "Fire Blast", "nameKo": "불대문자", "type": "fire", "damageClass": "special", "power": 110, "accuracy": 85},
+      {"moveId": "will-o-wisp", "nameEn": "Will-O-Wisp", "nameKo": "도깨비불", "type": "fire", "damageClass": "status", "power": null, "accuracy": 85}
+    ]
+  },
+  {
+    "pk": "OPTIONS#pokemon_champions#REGULATION#M-B",
+    "sk": "POKEMON#garchomp",
+    "entityType": "PokemonBattleOptions",
+    "ruleset": "pokemon_champions",
+    "regulationSet": "M-B",
+    "pokemonId": "garchomp",
+    "availableAbilities": [
+      {"abilityId": "sand-veil", "nameEn": "Sand Veil", "nameKo": "모래숨기", "slot": 1, "hidden": false},
+      {"abilityId": "rough-skin", "nameEn": "Rough Skin", "nameKo": "까칠한피부", "slot": 3, "hidden": true}
+    ],
+    "availableMoves": [
+      {"moveId": "earthquake", "nameEn": "Earthquake", "nameKo": "지진", "type": "ground", "damageClass": "physical", "power": 100, "accuracy": 100},
+      {"moveId": "dragon-claw", "nameEn": "Dragon Claw", "nameKo": "드래곤클로", "type": "dragon", "damageClass": "physical", "power": 80, "accuracy": 100},
+      {"moveId": "scale-shot", "nameEn": "Scale Shot", "nameKo": "스케일샷", "type": "dragon", "damageClass": "physical", "power": 25, "accuracy": 90},
+      {"moveId": "rock-slide", "nameEn": "Rock Slide", "nameKo": "스톤샤워", "type": "rock", "damageClass": "physical", "power": 75, "accuracy": 90},
+      {"moveId": "swords-dance", "nameEn": "Swords Dance", "nameKo": "칼춤", "type": "normal", "damageClass": "status", "power": null, "accuracy": null},
+      {"moveId": "fire-fang", "nameEn": "Fire Fang", "nameKo": "불꽃엄니", "type": "fire", "damageClass": "physical", "power": 65, "accuracy": 95}
+    ]
+  }
+]

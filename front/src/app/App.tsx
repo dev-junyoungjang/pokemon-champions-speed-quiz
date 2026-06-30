@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { api } from '../shared/api/client'
 import type { Difficulty, DifficultyOption, QuizQuestion } from '../entities/quiz/types'
-import type { PokemonMoveOption, PokemonSpecies, TeamMember, UserTeam } from '../entities/team/types'
+import type { PokemonAbilityOption, PokemonMoveOption, PokemonSpecies, TeamMember, UserTeam } from '../entities/team/types'
 
 const queryClient = new QueryClient()
 
@@ -1282,7 +1282,9 @@ function pokemonPatchFromSpecies(species: PokemonSpecies): Partial<TeamMember> {
     imageAssets: species.imageAssets,
     baseStatsSnapshot: species.baseStats,
     speciesTypes: species.types,
+    availableAbilities: species.availableAbilities,
     availableMoves: species.availableMoves,
+    ability: species.availableAbilities[0]?.abilityId ?? null,
     moves: species.availableMoves.slice(0, 4).map((move) => move.moveId),
   }
 }
@@ -1291,6 +1293,10 @@ function moveOptionLabel(move: PokemonMoveOption) {
   const type = typeMeta[move.type]?.ko ?? move.type
   const power = move.power ? ` / 위력 ${move.power}` : ''
   return `${move.nameKo} (${type}${power})`
+}
+
+function abilityOptionLabel(ability: PokemonAbilityOption) {
+  return `${ability.nameKo}${ability.hidden ? ' (숨겨진 특성)' : ''}`
 }
 
 type QuizDraftAnswer = {
@@ -1313,6 +1319,7 @@ const defaultMember = (slot: number): TeamMember => ({
   imageAssets: slot === 1 ? imageAssetsFromDex(445) : null,
   baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: slot === 1 ? 102 : 80 },
   speciesTypes: slot === 1 ? ['dragon', 'ground'] : [],
+  availableAbilities: [],
   availableMoves: [],
   moves: [],
   level: 50,
@@ -1332,6 +1339,7 @@ function mockMember(slot: number, name: string, dex: number, baseSpeed: number):
     imageAssets: imageAssetsFromDex(dex),
     baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: baseSpeed },
     speciesTypes: [],
+    availableAbilities: [],
     availableMoves: [],
     moves: [],
     level: 50,
@@ -1957,6 +1965,7 @@ function CreatePokemonScreen({
 
   const previewMember = member.pokemonName ? member : { ...member, pokemonName: '한카리아스', nationalDexNumber: 445, imageAssets: imageAssetsFromDex(445) }
   const displayTypes = member.speciesTypes?.length ? member.speciesTypes : []
+  const availableAbilities = member.availableAbilities ?? []
   const availableMoves = member.availableMoves ?? []
   const usedEv = statLabels.reduce((sum, [stat]) => sum + (member.evs[stat] ?? 0), 0)
   const remainingEv = EV_BUDGET - usedEv
@@ -2026,7 +2035,16 @@ function CreatePokemonScreen({
         <FullField>
           <FieldLabel>
             특성
-            <SelectLike type="button">특성 선택 <span>⌄</span></SelectLike>
+            <SelectField
+              value={member.ability ?? ''}
+              onChange={(event) => onUpdate({ ability: event.target.value || null })}
+              disabled={!availableAbilities.length}
+            >
+              <option value="">{availableAbilities.length ? '특성 선택' : '사용 가능 특성 없음'}</option>
+              {availableAbilities.map((ability) => (
+                <option key={ability.abilityId} value={ability.abilityId}>{abilityOptionLabel(ability)}</option>
+              ))}
+            </SelectField>
           </FieldLabel>
         </FullField>
 

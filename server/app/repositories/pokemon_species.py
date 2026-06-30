@@ -12,12 +12,14 @@ from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.core.settings import get_settings
-from app.models.domain import PokemonMoveOption, PokemonSpecies
+from app.models.domain import PokemonBattleOptions, PokemonMoveOption, PokemonSpecies
 
 
 DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_species_regulation_m_b.jsonl"
 MOVE_OPTIONS_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_move_options_sample.json"
+BATTLE_OPTIONS_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_battle_options_sample.json"
 REGULATION_SPECIES_PK = "SPECIES#pokemon_champions#REGULATION#M-B"
+REGULATION_OPTIONS_PK = "OPTIONS#pokemon_champions#REGULATION#M-B"
 
 
 class PokemonSpeciesDataSourceError(RuntimeError):
@@ -43,7 +45,7 @@ def _species_aliases(species: PokemonSpecies) -> set[str]:
 
 
 @lru_cache(maxsize=1)
-def load_move_options() -> dict[str, list[PokemonMoveOption]]:
+def load_legacy_move_options() -> dict[str, list[PokemonMoveOption]]:
     if not MOVE_OPTIONS_PATH.exists():
         return {}
 
@@ -54,10 +56,38 @@ def load_move_options() -> dict[str, list[PokemonMoveOption]]:
     }
 
 
-def _with_local_move_options(species: PokemonSpecies) -> PokemonSpecies:
-    if species.available_moves:
+@lru_cache(maxsize=1)
+def load_local_battle_options() -> dict[str, PokemonBattleOptions]:
+    if not BATTLE_OPTIONS_PATH.exists():
+        return {
+            pokemon_id: PokemonBattleOptions(pokemonId=pokemon_id, availableMoves=moves)
+            for pokemon_id, moves in load_legacy_move_options().items()
+        }
+
+    raw_options = json.loads(BATTLE_OPTIONS_PATH.read_text(encoding="utf-8"))
+    if isinstance(raw_options, dict):
+        iterable = raw_options.values()
+    else:
+        iterable = raw_options
+    return {
+        normalize_species_query(option.pokemon_id): option
+        for option in (PokemonBattleOptions.model_validate(item) for item in iterable)
+    }
+
+
+def _merge_battle_options(species: PokemonSpecies, options: PokemonBattleOptions | None) -> PokemonSpecies:
+    if options is None:
         return species
-    return species.model_copy(update={"available_moves": load_move_options().get(species.pokemon_id, [])})
+    return species.model_copy(
+        update={
+            "available_abilities": options.available_abilities,
+            "available_moves": options.available_moves,
+        }
+    )
+
+
+def _with_local_battle_options(species: PokemonSpecies) -> PokemonSpecies:
+    return _merge_battle_options(species, load_local_battle_options().get(species.pokemon_id))
 
 
 @lru_cache(maxsize=1)
@@ -68,12 +98,41 @@ def load_local_regulation_species() -> tuple[PokemonSpecies, ...]:
             if not line.strip():
                 continue
             item = PokemonSpecies.model_validate(json.loads(line))
-            species.append(_with_local_move_options(item))
+            species.append(_with_local_battle_options(item))
     return tuple(species)
 
 
 @lru_cache(maxsize=8)
-def load_dynamodb_regulation_species(table_name: str, region_name: str) -> tuple[PokemonSpecies, ...]:
+def load_dynamodb_battle_options(table_name: str, region_name: str) -> dict[str, PokemonBattleOptions]:
+    try:
+        dynamodb = boto3.resource(
+            "dynamodb",
+            region_name=region_name,
+            config=Config(connect_timeout=1, read_timeout=2, retries={"max_attempts": 1}),
+        )
+        table = cast(Any, dynamodb).Table(table_name)
+        items: list[dict[str, Any]] = []
+        query_kwargs: dict[str, Any] = {"KeyConditionExpression": Key("pk").eq(REGULATION_OPTIONS_PK)}
+        while True:
+            response = table.query(**query_kwargs)
+            items.extend(response.get("Items", []))
+            last_evaluated_key = response.get("LastEvaluatedKey")
+            if not last_evaluated_key:
+                break
+            query_kwargs["ExclusiveStartKey"] = last_evaluated_key
+    except (BotoCoreError, ClientError, TimeoutError) as exc:
+        raise PokemonSpeciesDataSourceError(
+            f"Failed to load Pokémon battle options from DynamoDB table {table_name!r}: {exc}"
+        ) from exc
+
+    return {
+        normalize_species_query(option.pokemon_id): option
+        for option in (PokemonBattleOptions.model_validate(item) for item in items)
+    }
+
+
+@lru_cache(maxsize=8)
+def load_dynamodb_regulation_species(table_name: str, region_name: str, options_table_name: str | None = None) -> tuple[PokemonSpecies, ...]:
     try:
         dynamodb = boto3.resource(
             "dynamodb",
@@ -95,24 +154,40 @@ def load_dynamodb_regulation_species(table_name: str, region_name: str) -> tuple
             f"Failed to load Pokémon species from DynamoDB table {table_name!r}: {exc}"
         ) from exc
 
-    species = tuple(_with_local_move_options(PokemonSpecies.model_validate(item)) for item in items)
+    options = load_local_battle_options()
+    if options_table_name:
+        try:
+            options = {**options, **load_dynamodb_battle_options(options_table_name, region_name)}
+        except PokemonSpeciesDataSourceError:
+            pass
+
+    species = tuple(
+        _merge_battle_options(PokemonSpecies.model_validate(item), options.get(normalize_species_query(item.get("pokemonId", ""))))
+        for item in items
+    )
     if not species:
         raise PokemonSpeciesDataSourceError(f"DynamoDB table {table_name!r} returned no Pokémon species items")
     return species
 
 
 @lru_cache(maxsize=8)
-def load_regulation_species(source: str | None = None, table_name: str | None = None, region_name: str | None = None) -> tuple[PokemonSpecies, ...]:
+def load_regulation_species(
+    source: str | None = None,
+    table_name: str | None = None,
+    region_name: str | None = None,
+    options_table_name: str | None = None,
+) -> tuple[PokemonSpecies, ...]:
     settings = get_settings()
     source = source or settings.pokemon_species_source
     table_name = table_name or settings.pokemon_species_table_name
     region_name = region_name or settings.aws_region
+    options_table_name = options_table_name or settings.pokemon_options_table_name
 
     if source == "local":
         return load_local_regulation_species()
 
     try:
-        return load_dynamodb_regulation_species(table_name, region_name)
+        return load_dynamodb_regulation_species(table_name, region_name, options_table_name)
     except PokemonSpeciesDataSourceError:
         # Local JSONL is kept as a reviewed fallback so local development and tests
         # still work when AWS credentials are not present.
@@ -120,9 +195,14 @@ def load_regulation_species(source: str | None = None, table_name: str | None = 
 
 
 @lru_cache(maxsize=8)
-def species_index(source: str | None = None, table_name: str | None = None, region_name: str | None = None) -> dict[str, PokemonSpecies]:
+def species_index(
+    source: str | None = None,
+    table_name: str | None = None,
+    region_name: str | None = None,
+    options_table_name: str | None = None,
+) -> dict[str, PokemonSpecies]:
     index: dict[str, PokemonSpecies] = {}
-    for species in load_regulation_species(source, table_name, region_name):
+    for species in load_regulation_species(source, table_name, region_name, options_table_name):
         for alias in _species_aliases(species):
             index.setdefault(alias, species)
     return index

@@ -71,6 +71,16 @@ class PokemonImageAssets(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class PokemonAbilityOption(BaseModel):
+    ability_id: str = Field(alias="abilityId")
+    name_en: str = Field(alias="nameEn")
+    name_ko: str = Field(alias="nameKo")
+    slot: int | None = None
+    hidden: bool = False
+
+    model_config = {"populate_by_name": True}
+
+
 class PokemonMoveOption(BaseModel):
     move_id: str = Field(alias="moveId")
     name_en: str = Field(alias="nameEn")
@@ -79,6 +89,14 @@ class PokemonMoveOption(BaseModel):
     damage_class: str | None = Field(default=None, alias="damageClass")
     power: int | None = None
     accuracy: int | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class PokemonBattleOptions(BaseModel):
+    pokemon_id: str = Field(alias="pokemonId")
+    available_abilities: list[PokemonAbilityOption] = Field(default_factory=list, alias="availableAbilities")
+    available_moves: list[PokemonMoveOption] = Field(default_factory=list, alias="availableMoves")
 
     model_config = {"populate_by_name": True}
 
@@ -95,6 +113,7 @@ class PokemonSpecies(BaseModel):
     base_stats: BaseStats = Field(alias="baseStats")
     image_assets: PokemonImageAssets = Field(alias="imageAssets")
     types: list[str] = Field(default_factory=list)
+    available_abilities: list[PokemonAbilityOption] = Field(default_factory=list, alias="availableAbilities")
     available_moves: list[PokemonMoveOption] = Field(default_factory=list, alias="availableMoves")
 
     model_config = {"populate_by_name": True}
@@ -107,6 +126,7 @@ class PokemonBuild(BaseModel):
     image_assets: PokemonImageAssets | None = Field(default=None, alias="imageAssets")
     base_stats_snapshot: BaseStats = Field(alias="baseStatsSnapshot")
     species_types: list[str] = Field(default_factory=list, alias="speciesTypes")
+    available_abilities: list[PokemonAbilityOption] = Field(default_factory=list, alias="availableAbilities")
     available_moves: list[PokemonMoveOption] = Field(default_factory=list, alias="availableMoves")
     moves: list[str] = Field(default_factory=list)
     level: int = Field(default=50, ge=1, le=100)

@@ -27,6 +27,7 @@ class Settings:
     aws_region: str
     pokemon_species_source: str
     pokemon_species_table_name: str
+    pokemon_options_table_name: str
 
     @property
     def openai_configured(self) -> bool:
@@ -76,4 +77,5 @@ def get_settings() -> Settings:
         aws_region=os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "ap-northeast-2")),
         pokemon_species_source=os.getenv("POKEMON_SPECIES_SOURCE", "dynamodb").strip().lower(),
         pokemon_species_table_name=os.getenv("POKEMON_SPECIES_TABLE_NAME", "pokemon-species"),
+        pokemon_options_table_name=os.getenv("POKEMON_OPTIONS_TABLE_NAME", "pokemon-options"),
     )
