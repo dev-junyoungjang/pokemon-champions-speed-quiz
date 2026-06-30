@@ -1313,12 +1313,12 @@ type QuizSummary = {
 
 const defaultMember = (slot: number): TeamMember => ({
   slot,
-  pokemonId: slot === 1 ? 'garchomp' : `pokemon-${slot}`,
-  pokemonName: slot === 1 ? '한카리아스' : '',
-  nationalDexNumber: slot === 1 ? 445 : null,
-  imageAssets: slot === 1 ? imageAssetsFromDex(445) : null,
-  baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: slot === 1 ? 102 : 80 },
-  speciesTypes: slot === 1 ? ['dragon', 'ground'] : [],
+  pokemonId: `pokemon-${slot}`,
+  pokemonName: '',
+  nationalDexNumber: null,
+  imageAssets: null,
+  baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: 80 },
+  speciesTypes: [],
   availableAbilities: [],
   availableMoves: [],
   moves: [],
@@ -1926,10 +1926,12 @@ function CreatePokemonScreen({
   member,
   onBack,
   onUpdate,
+  onSave,
 }: {
   member: TeamMember
   onBack: () => void
   onUpdate: (patch: Partial<TeamMember>) => void
+  onSave: () => void
 }) {
   function updateEv(stat: keyof TeamMember['evs'], value: number) {
     onUpdate({ evs: { ...member.evs, [stat]: value } })
@@ -2105,7 +2107,7 @@ function CreatePokemonScreen({
       </CreateScroll>
 
       <BottomAction>
-        <Button variant="primary" onPress={onBack}>엔트리에 저장</Button>
+        <Button variant="primary" onPress={onSave}>엔트리에 저장</Button>
       </BottomAction>
     </>
   )
@@ -2130,7 +2132,6 @@ function AppContent() {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<QuizDraftAnswer[]>([])
   const [activeSlot, setActiveSlot] = useState(1)
-  const [teamLoaded, setTeamLoaded] = useState(false)
 
   const teamQuery = useQuery({ queryKey: ['team'], queryFn: api.getTeam })
   const difficultiesQuery = useQuery({ queryKey: ['difficulties'], queryFn: api.getDifficulties })
@@ -2154,17 +2155,8 @@ function AppContent() {
     if (teamQuery.data) {
       const filledMembers = Array.from({ length: 6 }, (_, index) => teamQuery.data.members[index] ?? defaultMember(index + 1))
       setTeamDraft({ ...teamQuery.data, members: filledMembers })
-      setTeamLoaded(true)
     }
   }, [teamQuery.data])
-
-  useEffect(() => {
-    if (!teamLoaded) return
-    const timeoutId = window.setTimeout(() => {
-      saveTeam.mutate(teamDraft)
-    }, 600)
-    return () => window.clearTimeout(timeoutId)
-  }, [teamDraft, teamLoaded])
 
   const activeMember = teamDraft.members.find((member) => member.slot === activeSlot) ?? teamDraft.members[0]
   const previewQuestions = makeMockQuestions(teamDraft.members[0] ?? defaultMember(1))
@@ -2178,6 +2170,15 @@ function AppContent() {
       ...team,
       members: team.members.map((member) => (member.slot === slot ? { ...member, ...patch } : member)),
     }))
+  }
+
+  function saveCurrentTeam() {
+    saveTeam.mutate(teamDraft, {
+      onSuccess: (savedTeam) => {
+        queryClient.setQueryData(['team'], savedTeam)
+        setScreen('entry')
+      },
+    })
   }
 
   function openCreate(slot: number) {
@@ -2217,6 +2218,7 @@ function AppContent() {
             member={activeMember}
             onBack={() => setScreen('entry')}
             onUpdate={(patch) => updateMember(activeSlot, patch)}
+            onSave={saveCurrentTeam}
           />
         )}
         {screen === 'difficulty' && (

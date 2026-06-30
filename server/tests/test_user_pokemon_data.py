@@ -6,6 +6,24 @@ from app.repositories.user_pokemon_data import (
 )
 
 
+def test_user_pokemon_data_repository_defaults_to_empty_team(monkeypatch) -> None:
+    class FakeTable:
+        def get_item(self, Key):
+            return {}
+
+    class FakeDynamodb:
+        def Table(self, table_name: str):
+            return FakeTable()
+
+    monkeypatch.setattr("app.repositories.user_pokemon_data.boto3.resource", lambda *args, **kwargs: FakeDynamodb())
+
+    repository = UserPokemonDataRepository("user-pokemon-data", "ap-northeast-2")
+    team = repository.get_team("main")
+
+    assert team.team_name == "main"
+    assert team.members == []
+
+
 def test_user_pokemon_data_repository_persists_team_for_current_session(monkeypatch) -> None:
     writes = []
 

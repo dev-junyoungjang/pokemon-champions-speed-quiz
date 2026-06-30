@@ -152,7 +152,7 @@ class TeamMember(PokemonBuild):
 class UserTeam(BaseModel):
     team_name: str = Field(default="main", alias="teamName")
     format: str = "pokemon_champions"
-    members: list[TeamMember] = Field(min_length=1, max_length=6)
+    members: list[TeamMember] = Field(default_factory=list, max_length=6)
 
     model_config = {"populate_by_name": True}
 
