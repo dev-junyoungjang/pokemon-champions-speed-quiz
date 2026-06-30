@@ -247,6 +247,7 @@ class GenerateQuizRequest(BaseModel):
 class AnswerRequest(BaseModel):
     question_id: str = Field(alias="questionId")
     answer: bool
+    session_id: str | None = Field(default=None, alias="sessionId")
 
     model_config = {"populate_by_name": True}
 

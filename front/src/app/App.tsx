@@ -2097,6 +2097,7 @@ function AppContent() {
   })
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>('normal')
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
+  const [quizSessionId, setQuizSessionId] = useState<string | null>(null)
   const [questionIndex, setQuestionIndex] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<QuizDraftAnswer[]>([])
   const [activeSlot, setActiveSlot] = useState(1)
@@ -2112,6 +2113,7 @@ function AppContent() {
     onSuccess: (data) => {
       if (!data.questions.length) {
         setQuestions([])
+        setQuizSessionId(null)
         setQuestionIndex(0)
         setQuizAnswers([])
         setQuizStartError('최소 1마리 이상 엔트리에 저장해야 퀴즈를 시작할 수 있어요.')
@@ -2119,6 +2121,7 @@ function AppContent() {
         return
       }
       setQuestions(data.questions)
+      setQuizSessionId(data.sessionId ?? null)
       setQuestionIndex(0)
       setQuizAnswers([])
       setQuizStartError(null)
@@ -2126,7 +2129,7 @@ function AppContent() {
     },
   })
   const answerQuestion = useMutation({
-    mutationFn: ({ id, answer }: { id: string; answer: boolean }) => api.answerQuestion(id, answer),
+    mutationFn: ({ id, answer, sessionId }: { id: string; answer: boolean; sessionId?: string | null }) => api.answerQuestion(id, answer, sessionId),
   })
 
   useEffect(() => {
@@ -2185,6 +2188,7 @@ function AppContent() {
     setQuizAnswers([])
     setQuestionIndex(0)
     setQuestions([])
+    setQuizSessionId(null)
     setScreen('generating')
     generateQuiz.mutate(difficulty)
   }
@@ -2194,6 +2198,7 @@ function AppContent() {
 
     const nextAnswers = [...quizAnswers, { question: currentQuestion, answer: answerValue }]
     setQuizAnswers(nextAnswers)
+    answerQuestion.mutate({ id: currentQuestion.id, answer: answerValue, sessionId: quizSessionId })
 
     if (questionIndex >= sessionQuestions.length - 1) {
       setScreen('complete')

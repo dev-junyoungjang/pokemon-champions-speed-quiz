@@ -17,6 +17,7 @@ from app.models.domain import (
 from app.repositories.held_items import get_held_items_by_query
 from app.repositories.in_memory import InMemoryRepository
 from app.repositories.pokemon_species import get_species_by_query, list_species
+from app.repositories.quiz_history import DynamoDbQuizHistoryRepository, QuizHistoryRepository
 from app.repositories.user_pokemon_data import (
     UserPokemonDataRepository,
     reset_current_user_session_id,
@@ -35,7 +36,18 @@ def build_repository() -> InMemoryRepository:
     return InMemoryRepository()
 
 
+def build_quiz_history_repository() -> QuizHistoryRepository:
+    settings = get_settings()
+    if settings.quiz_history_source == "dynamodb":
+        return DynamoDbQuizHistoryRepository(
+            table_name=settings.quiz_history_table_name,
+            region_name=settings.aws_region,
+        )
+    return QuizHistoryRepository()
+
+
 repository = build_repository()
+history_repository = build_quiz_history_repository()
 quiz_service = QuizService(repository)
 
 app = FastAPI(title="Pokémon Champions Speed Quiz API", version="0.1.0")
@@ -140,7 +152,17 @@ def render_question(request: RenderQuestionRequest) -> dict[str, object]:
 @app.post("/api/v1/quiz/questions")
 def generate_questions(request: GenerateQuizRequest) -> dict[str, object]:
     questions = quiz_service.generate_questions(request)
-    return {"questions": questions}
+    session_id = history_repository.create_session(
+        difficulty=request.difficulty.value,
+        team_name=request.team_name,
+        questions=questions,
+    ) if questions else None
+    return {"questions": questions, "sessionId": session_id}
+
+
+@app.get("/api/v1/quiz/history")
+def quiz_history(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, object]:
+    return {"sessions": history_repository.list_sessions(limit)}
 
 
 @app.post("/api/v1/quiz/answers", response_model=AnswerResult)
@@ -148,10 +170,17 @@ def submit_answer(request: AnswerRequest) -> AnswerResult:
     question = quiz_service.get_question(request.question_id)
     if not question:
         raise HTTPException(status_code=404, detail="Question not found or expired")
-    return AnswerResult(
+    result = AnswerResult(
         correct=request.answer == question.correct_answer,
         correctAnswer=question.correct_answer,
         explanation=question.explanation,
         subjectSpeed=question.subject.speed.effective_speed,
         opponentSpeed=question.opponent.speed.effective_speed,
     )
+    history_repository.record_answer(
+        session_id=request.session_id,
+        question=question,
+        selected_answer=request.answer,
+        result=result,
+    )
+    return result

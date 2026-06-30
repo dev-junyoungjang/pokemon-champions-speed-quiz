@@ -14,6 +14,11 @@ export type GenerateQuizRequest = {
   teamName?: string
 }
 
+export type GenerateQuizResponse = {
+  questions: QuizQuestion[]
+  sessionId?: string | null
+}
+
 export type QuizQuestion = {
   id: string
   difficulty: Difficulty

@@ -30,6 +30,8 @@ class Settings:
     pokemon_options_table_name: str
     user_pokemon_data_source: str
     user_pokemon_data_table_name: str
+    quiz_history_source: str
+    quiz_history_table_name: str
 
     @property
     def openai_configured(self) -> bool:
@@ -82,4 +84,6 @@ def get_settings() -> Settings:
         pokemon_options_table_name=os.getenv("POKEMON_OPTIONS_TABLE_NAME", "pokemon-options"),
         user_pokemon_data_source=os.getenv("USER_POKEMON_DATA_SOURCE", "local").strip().lower(),
         user_pokemon_data_table_name=os.getenv("USER_POKEMON_DATA_TABLE_NAME", "user-pokemon-data"),
+        quiz_history_source=os.getenv("QUIZ_HISTORY_SOURCE", os.getenv("USER_POKEMON_DATA_SOURCE", "local")).strip().lower(),
+        quiz_history_table_name=os.getenv("QUIZ_HISTORY_TABLE_NAME", "user-quiz-history"),
     )

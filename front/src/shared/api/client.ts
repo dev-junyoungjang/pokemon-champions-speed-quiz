@@ -1,4 +1,4 @@
-import type { AnswerResult, Difficulty, DifficultyOption, GenerateQuizRequest, QuizQuestion } from '../../entities/quiz/types'
+import type { AnswerResult, Difficulty, DifficultyOption, GenerateQuizRequest, GenerateQuizResponse } from '../../entities/quiz/types'
 import type { HeldItemOption, PokemonSpecies, UserTeam } from '../../entities/team/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
@@ -42,7 +42,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 function requestQuizQuestions(payload: Required<GenerateQuizRequest>) {
-  return request<{ questions: QuizQuestion[] }>('/api/v1/quiz/questions', {
+  return request<GenerateQuizResponse>('/api/v1/quiz/questions', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -61,9 +61,9 @@ export const api = {
       : { count: 5, teamName: 'main', ...input }
     return requestQuizQuestions(request)
   },
-  answerQuestion: (questionId: string, answer: boolean) =>
+  answerQuestion: (questionId: string, answer: boolean, sessionId?: string | null) =>
     request<AnswerResult>('/api/v1/quiz/answers', {
       method: 'POST',
-      body: JSON.stringify({ questionId, answer }),
+      body: JSON.stringify({ questionId, answer, sessionId }),
     }),
 }

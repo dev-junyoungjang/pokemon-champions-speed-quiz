@@ -70,8 +70,20 @@ def test_legacy_generate_questions_uses_validated_rendered_questions():
     save_quiz_team()
     response = client.post("/api/v1/quiz/questions", json={"difficulty": "hard", "count": 1, "teamName": "main"})
     assert response.status_code == 200
-    question = response.json()["questions"][0]
+    payload = response.json()
+    question = payload["questions"][0]
+    assert payload["sessionId"]
     assert question["validatedQuestionId"]
     assert question["correctAnswer"] is False
     assert question["subject"]["speed"]["effectiveSpeed"] == 201
     assert question["opponent"]["speed"]["effectiveSpeed"] == 205
+
+    answer_response = client.post(
+        "/api/v1/quiz/answers",
+        json={"questionId": question["id"], "answer": False, "sessionId": payload["sessionId"]},
+    )
+    assert answer_response.status_code == 200
+    history_response = client.get("/api/v1/quiz/history")
+    assert history_response.status_code == 200
+    sessions = history_response.json()["sessions"]
+    assert any(session["sessionId"] == payload["sessionId"] for session in sessions)
