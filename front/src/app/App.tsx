@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { api } from '../shared/api/client'
 import type { Difficulty, DifficultyOption, QuizQuestion } from '../entities/quiz/types'
-import type { PokemonAbilityOption, PokemonMoveOption, PokemonSpecies, TeamMember, UserTeam } from '../entities/team/types'
+import type { HeldItemOption, PokemonAbilityOption, PokemonMoveOption, PokemonSpecies, TeamMember, UserTeam } from '../entities/team/types'
 
 const queryClient = new QueryClient()
 
@@ -1066,21 +1066,6 @@ const SelectField = styled.select`
   }
 `
 
-const SelectLike = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 34px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0 11px;
-  color: #7b8089;
-  font-size: 11px;
-  font-weight: 800;
-`
-
 const TwoColumnFields = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1297,6 +1282,10 @@ function moveOptionLabel(move: PokemonMoveOption) {
 
 function abilityOptionLabel(ability: PokemonAbilityOption) {
   return `${ability.nameKo}${ability.hidden ? ' (숨겨진 특성)' : ''}`
+}
+
+function heldItemOptionLabel(item: HeldItemOption) {
+  return item.nameKo === item.nameEn ? item.nameKo : `${item.nameKo} / ${item.nameEn}`
 }
 
 type QuizDraftAnswer = {
@@ -1969,6 +1958,8 @@ function CreatePokemonScreen({
   const displayTypes = member.speciesTypes?.length ? member.speciesTypes : []
   const availableAbilities = member.availableAbilities ?? []
   const availableMoves = member.availableMoves ?? []
+  const heldItemsQuery = useQuery({ queryKey: ['held-items'], queryFn: api.getHeldItems })
+  const heldItems = heldItemsQuery.data?.items ?? []
   const usedEv = statLabels.reduce((sum, [stat]) => sum + (member.evs[stat] ?? 0), 0)
   const remainingEv = EV_BUDGET - usedEv
 
@@ -2053,7 +2044,16 @@ function CreatePokemonScreen({
         <FullField>
           <FieldLabel>
             지닌 물건
-            <SelectLike type="button">지닌 물건 선택 <span>⌄</span></SelectLike>
+            <SelectField
+              value={member.item ?? ''}
+              onChange={(event) => onUpdate({ item: event.target.value || null })}
+              disabled={!heldItems.length}
+            >
+              <option value="">{heldItems.length ? '지닌 물건 선택' : '사용 가능 도구 없음'}</option>
+              {heldItems.map((item) => (
+                <option key={item.itemId} value={item.itemId}>{heldItemOptionLabel(item)}</option>
+              ))}
+            </SelectField>
           </FieldLabel>
         </FullField>
 

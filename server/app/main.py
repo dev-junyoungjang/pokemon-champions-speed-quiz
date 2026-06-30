@@ -14,6 +14,7 @@ from app.models.domain import (
     UserTeam,
     ValidatedQuizQuestion,
 )
+from app.repositories.held_items import get_held_items_by_query
 from app.repositories.in_memory import InMemoryRepository
 from app.repositories.pokemon_species import get_species_by_query, list_species
 from app.repositories.user_pokemon_data import (
@@ -102,6 +103,11 @@ def pokemon_species(query: str | None = Query(default=None, min_length=1)) -> di
         return {"species": species.model_dump(by_alias=True)}
 
     return {"species": [species.model_dump(by_alias=True) for species in list_species()]}
+
+
+@app.get("/api/v1/items")
+def held_items(query: str | None = Query(default=None, min_length=1)) -> dict[str, object]:
+    return {"items": get_held_items_by_query(query)}
 
 
 @app.get("/api/v1/teams/me", response_model=UserTeam)

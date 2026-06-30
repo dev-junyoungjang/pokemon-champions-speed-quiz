@@ -37,6 +37,14 @@ export type PokemonMoveOption = {
   accuracy?: number | null
 }
 
+export type HeldItemOption = {
+  itemId: string
+  nameEn: string
+  nameKo: string
+  categories: string[]
+  spriteUrl?: string | null
+}
+
 export type TeamMember = {
   slot: number
   pokemonId: string

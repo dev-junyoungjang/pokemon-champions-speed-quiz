@@ -11,6 +11,7 @@ This directory stores reviewable JSONL exports before any DynamoDB import.
   - Korean: <https://web-view.app.pokemonchampions.jp/battle/pages/events/rs178066986988lmoqpm/ko/pokemon.html>
 - Species enrichment source: PokeAPI Pokémon and Pokémon Species endpoints for base stats, types, species names, and image URLs.
 - Battle-option enrichment source: PokeAPI Pokémon Champions version group (`champions`) for ability and move options.
+- Held-item enrichment source: the official Regulation M-B held-item page plus PokeAPI battle held-item categories.
 - `meowstic-female-mega` is included as an explicit inferred record copied from `meowstic-male-mega`, because PokeAPI currently has empty identity data for that form.
 
 ## Files
@@ -27,6 +28,9 @@ This directory stores reviewable JSONL exports before any DynamoDB import.
 - `curated/pokemon_battle_options_regulation_m_b.json`
   - DynamoDB-shaped `pokemon-options` items for all official Regulation M-B Pokémon plus Mega forms for eligible species.
   - Includes `availableAbilities`, `availableMoves`, move metadata, learn details, types, base stats, and source metadata.
+- `curated/pokemon_held_items_regulation_m_b.jsonl`
+  - DynamoDB-shaped `PokemonHeldItemOption` records for battle-relevant held items.
+  - Includes English/Korean names, PokeAPI category, sprite URL, fling data, and audit source metadata.
 - `rejected/pokemon_battle_options_regulation_m_b_rejected.jsonl`
   - Failed battle-option enrichment records. The current export has zero rejected records.
 - `rules/regulation_m_b_rules.json`
@@ -42,6 +46,7 @@ This directory stores reviewable JSONL exports before any DynamoDB import.
 python server/scripts/crawl_regulation_mb.py
 python server/scripts/crawl_pokemon_battle_options.py
 python server/scripts/add_mega_species_records.py
+python server/scripts/crawl_pokemon_held_items.py
 ```
 
 The scripts write JSON/JSONL locally and do not write to DynamoDB. Import reviewed battle options with:
