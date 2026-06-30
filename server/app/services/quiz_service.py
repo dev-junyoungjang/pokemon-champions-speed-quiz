@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import logging
 from itertools import cycle
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 from app.core.settings import get_settings
 from app.core.speed import base_speed_of, calculate_effective_speed
@@ -9,6 +10,7 @@ from app.models.domain import (
     Difficulty,
     GenerateQuizRequest,
     PokemonBuild,
+    MetaSample,
     QuizPokemonCase,
     QuizQuestion,
     QuizQuestionCandidate,
@@ -20,12 +22,22 @@ from app.services.ai_question_client import AiQuestionError, OpenAiResponsesClie
 
 RULESET_VERSION = "pokemon_champions:speed:v1"
 
+logger = logging.getLogger(__name__)
+
 
 class QuizService:
-    def __init__(self, repository: InMemoryRepository, ai_client: OpenAiResponsesClient | None = None) -> None:
+    def __init__(
+        self,
+        repository: InMemoryRepository,
+        ai_client: OpenAiResponsesClient | None = None,
+        meta_provider: Callable[[], Sequence[MetaSample]] | None = None,
+    ) -> None:
         self.repository = repository
         self.settings = get_settings()
         self.ai_client = ai_client or OpenAiResponsesClient(self.settings)
+        # Production sources opponents from the species DB; without a provider
+        # (tests/local) it falls back to the repository's static meta pool.
+        self.meta_provider = meta_provider
         self._questions: dict[str, QuizQuestion] = {}
         self._validated_questions: dict[str, ValidatedQuizQuestion] = {}
 
@@ -47,7 +59,7 @@ class QuizService:
 
     def generate_candidates(self, request: GenerateQuizRequest) -> list[QuizQuestionCandidate]:
         team = self.repository.get_team(request.team_name)
-        meta_samples = self.repository.list_active_meta_samples()
+        meta_samples = self._meta_pool()
         if not team.members or not meta_samples:
             return []
 
@@ -58,6 +70,14 @@ class QuizService:
 
         return self._generate_deterministic_candidates(request, team.members, meta_samples)
 
+    def _meta_pool(self) -> Sequence[MetaSample]:
+        if self.meta_provider is not None:
+            samples = list(self.meta_provider())
+            if samples:
+                return samples
+            logger.warning("Species meta provider returned no opponents; using repository meta pool")
+        return self.repository.list_active_meta_samples()
+
     def _generate_deterministic_candidates(
         self,
         request: GenerateQuizRequest,
@@ -66,9 +86,14 @@ class QuizService:
     ) -> list[QuizQuestionCandidate]:
         candidates: list[QuizQuestionCandidate] = []
         pairs = zip(cycle(team_members), cycle(meta_samples), strict=False)
+        # cycle() is infinite; bound the scan so an all-same-species pool can't loop forever.
+        remaining_scans = request.count + len(team_members) * len(meta_samples)
         for subject, opponent in pairs:
-            if len(candidates) >= request.count:
+            if len(candidates) >= request.count or remaining_scans <= 0:
                 break
+            remaining_scans -= 1
+            if subject.pokemon_id == opponent.pokemon_id:
+                continue
             candidates.append(
                 QuizQuestionCandidate(
                     difficulty=request.difficulty,
@@ -96,7 +121,8 @@ class QuizService:
                     instructions=(
                         "You generate Pokémon Champions speed quiz pair selections. "
                         "Return only JSON. Do not compute answers, speeds, statements, or explanations. "
-                        "Choose varied pairs from the provided team and meta pools."
+                        "Choose varied pairs from the provided team and meta pools. "
+                        "Never pair a Pokémon against the same species (matching pokemonId)."
                     ),
                     input_payload={
                         "difficulty": request.difficulty.value,
@@ -107,6 +133,7 @@ class QuizService:
                     },
                 )
             except AiQuestionError:
+                logger.warning("AI candidate generation failed; falling back to deterministic pairs")
                 break
 
             for pair in payload.get("pairs", []):
@@ -118,6 +145,8 @@ class QuizService:
                     subject = team_members[int(pair["teamIndex"])]
                     opponent = meta_samples[int(pair["metaIndex"])]
                 except (KeyError, TypeError, ValueError, IndexError):
+                    continue
+                if subject.pokemon_id == opponent.pokemon_id:
                     continue
                 candidates.append(
                     QuizQuestionCandidate(
@@ -242,17 +271,24 @@ class QuizService:
                 },
             )
         except AiQuestionError:
+            logger.warning("AI rendering failed; falling back to template prose")
             return None
 
         statement = payload.get("statement")
         explanation = payload.get("explanation")
         if not isinstance(statement, str) or not isinstance(explanation, str):
+            logger.warning("AI rendering rejected: statement/explanation not strings: %s", payload)
             return None
         if not statement.strip() or not explanation.strip():
+            logger.warning("AI rendering rejected: empty statement/explanation")
             return None
         subject_speed = str(validated.subject.speed.effective_speed)
         opponent_speed = str(validated.opponent.speed.effective_speed)
         if subject_speed not in explanation or opponent_speed not in explanation:
+            logger.warning(
+                "AI rendering rejected: explanation missing speeds (%s/%s): %s",
+                subject_speed, opponent_speed, explanation[:300],
+            )
             return None
         return statement.strip(), explanation.strip()
 

@@ -12,7 +12,7 @@ from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.core.settings import get_settings
-from app.models.domain import PokemonBattleOptions, PokemonMoveOption, PokemonSpecies
+from app.models.domain import MetaSample, PokemonBattleOptions, PokemonMoveOption, PokemonSpecies
 
 
 DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_species_regulation_m_b.jsonl"
@@ -266,3 +266,26 @@ def get_species_by_query(query: str) -> PokemonSpecies | None:
 
 def list_species() -> list[PokemonSpecies]:
     return list(load_regulation_species())
+
+
+def _species_to_meta_sample(species: PokemonSpecies) -> MetaSample:
+    """Map a DB species to a neutral quiz opponent (base stats only).
+
+    Build knobs (nature/item/EVs) stay at defaults: nature=Neutral, EV 0, IV 31.
+    The difficulty engine adds modifiers, so the opponent's raw speed is the
+    species base speed at level 50.
+    """
+    return MetaSample(
+        pokemonId=species.pokemon_id,
+        pokemonName=species.name_ko or species.name_en,
+        nationalDexNumber=species.national_dex_number,
+        imageAssets=species.image_assets,
+        baseStatsSnapshot=species.base_stats,
+        speciesTypes=species.types,
+        usageRank=species.national_dex_number,
+    )
+
+
+@lru_cache(maxsize=1)
+def list_meta_samples() -> tuple[MetaSample, ...]:
+    return tuple(_species_to_meta_sample(species) for species in load_regulation_species())

@@ -1,8 +1,19 @@
+import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import app, quiz_service
+from app.services.ai_question_client import OpenAiResponsesClient
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _deterministic_quiz(monkeypatch):
+    # These tests assert deterministic template prose against the static meta
+    # pool; keep them off live OpenAI and the species-backed opponent provider.
+    monkeypatch.setattr(OpenAiResponsesClient, "enabled_for_candidates", lambda self: False)
+    monkeypatch.setattr(OpenAiResponsesClient, "enabled_for_rendering", lambda self: False)
+    monkeypatch.setattr(quiz_service, "meta_provider", None)
 
 
 def save_quiz_team() -> None:

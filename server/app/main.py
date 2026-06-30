@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+
+# Surface app INFO logs (e.g. OpenAI results) under uvicorn's default config.
+logging.basicConfig(level=logging.INFO)
 
 from app.core.settings import get_settings
 from app.models.domain import (
@@ -16,7 +21,7 @@ from app.models.domain import (
 )
 from app.repositories.held_items import get_held_items_by_query
 from app.repositories.in_memory import InMemoryRepository
-from app.repositories.pokemon_species import get_species_by_query, list_species
+from app.repositories.pokemon_species import get_species_by_query, list_meta_samples, list_species
 from app.repositories.quiz_history import DynamoDbQuizHistoryRepository, QuizHistoryRepository
 from app.repositories.user_pokemon_data import (
     UserPokemonDataRepository,
@@ -48,7 +53,7 @@ def build_quiz_history_repository() -> QuizHistoryRepository:
 
 repository = build_repository()
 history_repository = build_quiz_history_repository()
-quiz_service = QuizService(repository)
+quiz_service = QuizService(repository, meta_provider=list_meta_samples)
 
 app = FastAPI(title="Pokémon Champions Speed Quiz API", version="0.1.0")
 
