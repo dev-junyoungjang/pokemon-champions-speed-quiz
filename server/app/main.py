@@ -189,3 +189,10 @@ def submit_answer(request: AnswerRequest) -> AnswerResult:
         result=result,
     )
     return result
+
+
+# AWS Lambda entry point (Mangum wraps the ASGI app). Harmless when running
+# locally under uvicorn. lifespan="off" since the app has no startup/shutdown hooks.
+from mangum import Mangum  # noqa: E402
+
+handler = Mangum(app, lifespan="off")

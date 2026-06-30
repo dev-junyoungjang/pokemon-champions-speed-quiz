@@ -5,8 +5,12 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_HELD_ITEMS_FILE = ROOT / "server" / "data" / "curated" / "pokemon_held_items_regulation_m_b.jsonl"
+# parents[2] = the server/ root (matches pokemon_species.py); resolves both
+# locally and in the Lambda image where code sits at the task root without a
+# `server/` prefix.
+DEFAULT_HELD_ITEMS_FILE = (
+    Path(__file__).resolve().parents[2] / "data" / "curated" / "pokemon_held_items_regulation_m_b.jsonl"
+)
 
 
 def normalize_query(value: str) -> str:
