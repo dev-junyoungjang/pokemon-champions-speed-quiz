@@ -14,6 +14,7 @@ def test_held_items_include_champions_battle_items() -> None:
     assert "choice-scarf" in item_ids
     assert "leftovers" in item_ids
     assert "garchompite" in item_ids
+    assert "raichuite-x" in item_ids
 
 
 def test_held_items_can_be_searched_by_korean_name() -> None:

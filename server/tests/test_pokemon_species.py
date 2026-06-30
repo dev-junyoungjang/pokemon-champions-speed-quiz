@@ -37,6 +37,9 @@ def test_pokemon_species_lookup_can_return_mega_form() -> None:
     assert species["baseStats"] == {"hp": 78, "atk": 130, "def": 111, "spa": 130, "spd": 85, "spe": 100}
     assert any(ability["abilityId"] == "tough-claws" for ability in species["availableAbilities"])
     assert any(move["moveId"] == "flamethrower" for move in species["availableMoves"])
+    assert species["formKind"] == "mega"
+    assert species["megaParentPokemonId"] == "charizard"
+    assert species["megaStoneItemId"] == "charizardite-x"
 
 
 def test_inferred_meowstic_female_mega_species_lookup() -> None:

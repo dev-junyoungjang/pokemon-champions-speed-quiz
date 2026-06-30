@@ -79,6 +79,9 @@ export type PokemonSpecies = {
   speciesNameKo: string
   nationalDexNumber: number
   pokemonChampionsCode: string
+  formKind?: string | null
+  megaParentPokemonId?: string | null
+  megaStoneItemId?: string | null
   baseStats: BaseStats
   imageAssets: PokemonImageAssets
   types: string[]

@@ -21,6 +21,49 @@ BATTLE_OPTIONS_PATH = Path(__file__).resolve().parents[2] / "data" / "curated" /
 REGULATION_SPECIES_PK = "SPECIES#pokemon_champions#REGULATION#M-B"
 REGULATION_OPTIONS_PK = "OPTIONS#pokemon_champions#REGULATION#M-B"
 
+MEGA_STONE_ITEM_EXCEPTIONS = {
+    "abomasnow": "abomasite",
+    "alakazam": "alakazite",
+    "altaria": "altarianite",
+    "audino": "audinite",
+    "blastoise": "blastoisinite",
+    "diancie": "diancite",
+    "gallade": "galladite",
+    "glalie": "glalitite",
+    "heracross": "heracronite",
+    "houndoom": "houndoominite",
+    "kyogre": "blue-orb",
+    "latias": "latiasite",
+    "latios": "latiosite",
+    "lopunny": "lopunnite",
+    "lucario": "lucarionite",
+    "manectric": "manectite",
+    "meowstic-female": "meowsticite",
+    "meowstic-male": "meowsticite",
+    "rayquaza": None,
+    "sableye": "sablenite",
+    "sharpedo": "sharpedonite",
+    "slowbro": "slowbronite",
+}
+
+
+def mega_stone_item_id_for_pokemon_id(pokemon_id: str) -> str | None:
+    if "-mega" not in pokemon_id:
+        return None
+
+    parent_id = pokemon_id.split("-mega", 1)[0]
+    suffix = pokemon_id.split("-mega", 1)[1].strip("-")
+    if parent_id in MEGA_STONE_ITEM_EXCEPTIONS:
+        base_item_id = MEGA_STONE_ITEM_EXCEPTIONS[parent_id]
+    elif parent_id.endswith("e"):
+        base_item_id = f"{parent_id[:-1]}ite"
+    else:
+        base_item_id = f"{parent_id}ite"
+
+    if base_item_id is None:
+        return None
+    return f"{base_item_id}-{suffix}" if suffix else base_item_id
+
 
 class PokemonSpeciesDataSourceError(RuntimeError):
     pass
@@ -77,13 +120,22 @@ def load_local_battle_options() -> dict[str, PokemonBattleOptions]:
 
 def _merge_battle_options(species: PokemonSpecies, options: PokemonBattleOptions | None) -> PokemonSpecies:
     if options is None:
-        return species
-    return species.model_copy(
+        return _with_mega_stone_item(species)
+    return _with_mega_stone_item(species.model_copy(
         update={
             "available_abilities": options.available_abilities,
             "available_moves": options.available_moves,
         }
-    )
+    ))
+
+
+def _with_mega_stone_item(species: PokemonSpecies) -> PokemonSpecies:
+    if species.mega_stone_item_id:
+        return species
+    mega_stone_item_id = mega_stone_item_id_for_pokemon_id(species.pokemon_id)
+    if mega_stone_item_id is None:
+        return species
+    return species.model_copy(update={"mega_stone_item_id": mega_stone_item_id})
 
 
 def _with_local_battle_options(species: PokemonSpecies) -> PokemonSpecies:

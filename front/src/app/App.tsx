@@ -1270,6 +1270,7 @@ function pokemonPatchFromSpecies(species: PokemonSpecies): Partial<TeamMember> {
     availableAbilities: species.availableAbilities,
     availableMoves: species.availableMoves,
     ability: species.availableAbilities[0]?.abilityId ?? null,
+    item: species.megaStoneItemId ?? null,
     moves: species.availableMoves.slice(0, 4).map((move) => move.moveId),
   }
 }
@@ -1960,6 +1961,9 @@ function CreatePokemonScreen({
   const availableMoves = member.availableMoves ?? []
   const heldItemsQuery = useQuery({ queryKey: ['held-items'], queryFn: api.getHeldItems })
   const heldItems = heldItemsQuery.data?.items ?? []
+  const isMegaPokemon = member.pokemonId.includes('-mega')
+  const fixedMegaStone = isMegaPokemon ? heldItems.find((item) => item.itemId === member.item) : undefined
+  const fixedMegaStoneLabel = fixedMegaStone ? heldItemOptionLabel(fixedMegaStone) : member.item
   const usedEv = statLabels.reduce((sum, [stat]) => sum + (member.evs[stat] ?? 0), 0)
   const remainingEv = EV_BUDGET - usedEv
 
@@ -2047,9 +2051,10 @@ function CreatePokemonScreen({
             <SelectField
               value={member.item ?? ''}
               onChange={(event) => onUpdate({ item: event.target.value || null })}
-              disabled={!heldItems.length}
+              disabled={!heldItems.length || Boolean(isMegaPokemon && member.item)}
             >
-              <option value="">{heldItems.length ? '지닌 물건 선택' : '사용 가능 도구 없음'}</option>
+              <option value="">{isMegaPokemon && member.item ? '메가 나이트 고정' : heldItems.length ? '지닌 물건 선택' : '사용 가능 도구 없음'}</option>
+              {isMegaPokemon && member.item && !fixedMegaStone && <option value={member.item}>{fixedMegaStoneLabel}</option>}
               {heldItems.map((item) => (
                 <option key={item.itemId} value={item.itemId}>{heldItemOptionLabel(item)}</option>
               ))}
