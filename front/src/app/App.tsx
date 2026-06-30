@@ -1929,6 +1929,9 @@ function CreatePokemonScreen({
 
   function updateMove(index: number, moveId: string) {
     const moves = [...(member.moves ?? [])]
+    if (moveId && moves.some((existingMoveId, moveIndex) => moveIndex !== index && existingMoveId === moveId)) {
+      return
+    }
     moves[index] = moveId
     onUpdate({ moves })
   }
@@ -2021,9 +2024,10 @@ function CreatePokemonScreen({
                 disabled={!availableMoves.length}
               >
                 <option value="">{availableMoves.length ? '기술 선택' : '사용 가능 기술 없음'}</option>
-                {availableMoves.map((move) => (
-                  <option key={move.moveId} value={move.moveId}>{moveOptionLabel(move)}</option>
-                ))}
+                {availableMoves.map((move) => {
+                  const selectedInAnotherSlot = member.moves?.some((moveId, moveIndex) => moveIndex !== index && moveId === move.moveId) ?? false
+                  return <option key={move.moveId} value={move.moveId} disabled={selectedInAnotherSlot}>{moveOptionLabel(move)}</option>
+                })}
               </SelectField>
             </FieldLabel>
           ))}
