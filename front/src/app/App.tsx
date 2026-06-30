@@ -1320,59 +1320,6 @@ const defaultMember = (slot: number): TeamMember => ({
   ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
 })
 
-function mockMember(slot: number, name: string, dex: number, baseSpeed: number): TeamMember {
-  return {
-    slot,
-    pokemonId: name.toLowerCase().replace(/\s+/g, '-'),
-    pokemonName: name,
-    nationalDexNumber: dex,
-    imageAssets: imageAssetsFromDex(dex),
-    baseStatsSnapshot: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: baseSpeed },
-    speciesTypes: [],
-    availableAbilities: [],
-    availableMoves: [],
-    moves: [],
-    level: 50,
-    nature: 'Jolly',
-    ability: null,
-    item: null,
-    evs: {},
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
-  }
-}
-
-function makeMockQuestions(subject: TeamMember): QuizQuestion[] {
-  const baseSubject = subject.pokemonName ? subject : mockMember(1, '한카리아스', 445, 102)
-  const opponents = [
-    mockMember(99, '무쇠손', 992, 50),
-    mockMember(100, '드래펄트', 887, 142),
-    mockMember(101, '망나뇽', 149, 80),
-  ]
-
-  return opponents.map((opponent, index) => {
-    const subjectSpeed = baseSubject.baseStatsSnapshot.spe
-    const opponentSpeed = opponent.baseStatsSnapshot.spe
-    return {
-      id: `mock-speed-preview-${index + 1}`,
-      difficulty: 'easy',
-      mode: 'IS_FASTER',
-      statement: `내 ${baseSubject.pokemonName}가 ${opponent.pokemonName}보다 빠를까?`,
-      answerType: 'YES_NO',
-      correctAnswer: subjectSpeed > opponentSpeed,
-      subject: {
-        build: baseSubject,
-        speed: { rawSpeed: subjectSpeed, effectiveSpeed: subjectSpeed, modifiers: [`base speed=${subjectSpeed}`] },
-      },
-      opponent: {
-        build: opponent,
-        speed: { rawSpeed: opponentSpeed, effectiveSpeed: opponentSpeed, modifiers: [`base speed=${opponentSpeed}`] },
-      },
-      explanation: `${baseSubject.pokemonName}: ${subjectSpeed}, ${opponent.pokemonName}: ${opponentSpeed}. ${subjectSpeed} ${subjectSpeed > opponentSpeed ? '>' : '<='} ${opponentSpeed} 이므로 정답은 ${subjectSpeed > opponentSpeed ? '예' : '아니오'}입니다.`,
-      rulesetVersion: 'mock-preview',
-    } satisfies QuizQuestion
-  })
-}
-
 function imageAssetsFromDex(nationalDexNumber: number) {
   const padded = String(nationalDexNumber).padStart(3, '0')
   return {
@@ -1450,7 +1397,17 @@ function KoreanName({ member }: { member: TeamMember }) {
   return <>{member.pokemonName || '포켓몬 추가'}</>
 }
 
-function EntryScreen({ teamDraft, onStart, onOpenCreate }: { teamDraft: UserTeam; onStart: () => void; onOpenCreate: (slot: number) => void }) {
+function EntryScreen({
+  teamDraft,
+  onStart,
+  onOpenCreate,
+  startError,
+}: {
+  teamDraft: UserTeam
+  onStart: () => void
+  onOpenCreate: (slot: number) => void
+  startError?: string | null
+}) {
   return (
     <>
       <Header>
@@ -1507,6 +1464,8 @@ function EntryScreen({ teamDraft, onStart, onOpenCreate }: { teamDraft: UserTeam
           )
         })}
       </EntryGrid>
+
+      {startError && <GeneratingError>{startError}</GeneratingError>}
 
       <BottomAction>
         <Button variant="primary" onPress={onStart}>퀴즈 시작하기</Button>
@@ -2141,6 +2100,7 @@ function AppContent() {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<QuizDraftAnswer[]>([])
   const [activeSlot, setActiveSlot] = useState(1)
+  const [quizStartError, setQuizStartError] = useState<string | null>(null)
 
   const teamQuery = useQuery({ queryKey: ['team'], queryFn: api.getTeam })
   const difficultiesQuery = useQuery({ queryKey: ['difficulties'], queryFn: api.getDifficulties })
@@ -2150,9 +2110,18 @@ function AppContent() {
   const generateQuiz = useMutation({
     mutationFn: api.generateQuestions,
     onSuccess: (data) => {
+      if (!data.questions.length) {
+        setQuestions([])
+        setQuestionIndex(0)
+        setQuizAnswers([])
+        setQuizStartError('최소 1마리 이상 엔트리에 저장해야 퀴즈를 시작할 수 있어요.')
+        setScreen('entry')
+        return
+      }
       setQuestions(data.questions)
       setQuestionIndex(0)
       setQuizAnswers([])
+      setQuizStartError(null)
       setScreen('quiz')
     },
   })
@@ -2168,10 +2137,10 @@ function AppContent() {
   }, [teamQuery.data])
 
   const activeMember = teamDraft.members.find((member) => member.slot === activeSlot) ?? teamDraft.members[0]
-  const previewQuestions = makeMockQuestions(teamDraft.members[0] ?? defaultMember(1))
-  const sessionQuestions = questions.length ? questions : previewQuestions
-  const effectiveAnswers = quizAnswers.length ? quizAnswers : (screen === 'complete' || screen === 'review' ? previewQuestions.map((question, index) => ({ question, answer: index === 1 ? true : question.correctAnswer })) : [])
-  const currentQuestion = sessionQuestions[questionIndex] ?? (screen === 'quiz' ? sessionQuestions[0] : undefined)
+  const hasSavedPokemon = teamDraft.members.some((member) => Boolean(member.pokemonId && member.pokemonName))
+  const sessionQuestions = questions
+  const effectiveAnswers = quizAnswers
+  const currentQuestion = sessionQuestions[questionIndex]
   const mascot = teamDraft.members.find((member) => member.pokemonName) ?? defaultMember(1)
 
   function updateMember(slot: number, patch: Partial<TeamMember>) {
@@ -2191,11 +2160,27 @@ function AppContent() {
   }
 
   function openCreate(slot: number) {
+    setQuizStartError(null)
     setActiveSlot(slot)
     setScreen('create')
   }
 
+  function openDifficulty() {
+    if (!hasSavedPokemon) {
+      setQuizStartError('최소 1마리 이상 엔트리에 저장해야 퀴즈를 시작할 수 있어요.')
+      return
+    }
+    setQuizStartError(null)
+    setScreen('difficulty')
+  }
+
   function startQuiz(difficulty = selectedDifficulty ?? 'easy') {
+    if (!hasSavedPokemon) {
+      setQuizStartError('최소 1마리 이상 엔트리에 저장해야 퀴즈를 시작할 수 있어요.')
+      setScreen('entry')
+      return
+    }
+    setQuizStartError(null)
     setSelectedDifficulty(difficulty)
     setQuizAnswers([])
     setQuestionIndex(0)
@@ -2221,7 +2206,7 @@ function AppContent() {
   return (
     <Screen>
       <Stage>
-        {screen === 'entry' && <EntryScreen teamDraft={teamDraft} onStart={() => setScreen('difficulty')} onOpenCreate={openCreate} />}
+        {screen === 'entry' && <EntryScreen teamDraft={teamDraft} onStart={openDifficulty} onOpenCreate={openCreate} startError={quizStartError} />}
         {screen === 'create' && activeMember && (
           <CreatePokemonScreen
             member={activeMember}
