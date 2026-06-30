@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.settings import get_settings
@@ -16,7 +16,11 @@ from app.models.domain import (
 )
 from app.repositories.in_memory import InMemoryRepository
 from app.repositories.pokemon_species import get_species_by_query, list_species
-from app.repositories.user_pokemon_data import UserPokemonDataRepository
+from app.repositories.user_pokemon_data import (
+    UserPokemonDataRepository,
+    reset_current_user_session_id,
+    set_current_user_session_id,
+)
 from app.services.quiz_service import QuizService
 
 
@@ -26,7 +30,6 @@ def build_repository() -> InMemoryRepository:
         return UserPokemonDataRepository(
             table_name=settings.user_pokemon_data_table_name,
             region_name=settings.aws_region,
-            user_id=settings.user_pokemon_data_user_id,
         )
     return InMemoryRepository()
 
@@ -35,6 +38,15 @@ repository = build_repository()
 quiz_service = QuizService(repository)
 
 app = FastAPI(title="Pokémon Champions Speed Quiz API", version="0.1.0")
+
+
+@app.middleware("http")
+async def user_session_middleware(request: Request, call_next):
+    token = set_current_user_session_id(request.headers.get("x-user-session-id", "anonymous"))
+    try:
+        return await call_next(request)
+    finally:
+        reset_current_user_session_id(token)
 
 app.add_middleware(
     CORSMiddleware,

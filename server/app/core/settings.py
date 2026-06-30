@@ -30,7 +30,6 @@ class Settings:
     pokemon_options_table_name: str
     user_pokemon_data_source: str
     user_pokemon_data_table_name: str
-    user_pokemon_data_user_id: str
 
     @property
     def openai_configured(self) -> bool:
@@ -83,5 +82,4 @@ def get_settings() -> Settings:
         pokemon_options_table_name=os.getenv("POKEMON_OPTIONS_TABLE_NAME", "pokemon-options"),
         user_pokemon_data_source=os.getenv("USER_POKEMON_DATA_SOURCE", "local").strip().lower(),
         user_pokemon_data_table_name=os.getenv("USER_POKEMON_DATA_TABLE_NAME", "user-pokemon-data"),
-        user_pokemon_data_user_id=os.getenv("USER_POKEMON_DATA_USER_ID", "local"),
     )

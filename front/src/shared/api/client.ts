@@ -2,10 +2,30 @@ import type { AnswerResult, Difficulty, DifficultyOption, GenerateQuizRequest, Q
 import type { PokemonSpecies, UserTeam } from '../../entities/team/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+const USER_SESSION_STORAGE_KEY = 'pokemon-champions:user-session-id'
+
+function createUserSessionId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
+  return `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+}
+
+function getUserSessionId() {
+  const storage = globalThis.sessionStorage
+  const existing = storage?.getItem(USER_SESSION_STORAGE_KEY)
+  if (existing) return existing
+
+  const created = createUserSessionId()
+  storage?.setItem(USER_SESSION_STORAGE_KEY, created)
+  return created
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-Session-Id': getUserSessionId(),
+      ...options?.headers,
+    },
     ...options,
   })
   if (!response.ok) {

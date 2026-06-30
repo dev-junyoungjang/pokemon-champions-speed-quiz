@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextvars import ContextVar, Token
 from copy import deepcopy
 from typing import Any, cast
 
@@ -12,21 +13,34 @@ from app.repositories.in_memory import DEFAULT_TEAM, InMemoryRepository
 
 USER_PK_PREFIX = "USER"
 TEAM_SK_PREFIX = "TEAM"
+DEFAULT_SESSION_USER_ID = "anonymous"
+current_user_session_id: ContextVar[str] = ContextVar("current_user_session_id", default=DEFAULT_SESSION_USER_ID)
+
+
+def set_current_user_session_id(user_session_id: str) -> Token[str]:
+    return current_user_session_id.set(user_session_id.strip() or DEFAULT_SESSION_USER_ID)
+
+
+def reset_current_user_session_id(token: Token[str]) -> None:
+    current_user_session_id.reset(token)
 
 
 class UserPokemonDataRepository(InMemoryRepository):
     """Persist user-owned Pokémon/team data to a DynamoDB pk/sk table.
 
-    The app does not have authentication yet, so `user_id` is a configurable
-    stable placeholder. Once auth exists, this can be replaced by the signed-in
-    user id without changing the item shape.
+    Authentication is not wired yet. The frontend generates an anonymous session
+    id, stores it in sessionStorage, and sends it as `X-User-Session-Id`; this
+    repository uses that id as the DynamoDB user partition suffix.
     """
 
-    def __init__(self, table_name: str, region_name: str, user_id: str = "local") -> None:
+    def __init__(self, table_name: str, region_name: str) -> None:
         super().__init__()
         self.table_name = table_name
         self.region_name = region_name
-        self.user_id = user_id
+
+    @property
+    def user_id(self) -> str:
+        return current_user_session_id.get()
 
     @property
     def user_pk(self) -> str:
