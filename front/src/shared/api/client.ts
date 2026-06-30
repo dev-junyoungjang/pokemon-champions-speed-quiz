@@ -10,9 +10,16 @@ function createUserSessionId() {
 }
 
 function getUserSessionId() {
-  const storage = globalThis.sessionStorage
+  const storage = globalThis.localStorage
+  const legacySessionStorage = globalThis.sessionStorage
   const existing = storage?.getItem(USER_SESSION_STORAGE_KEY)
   if (existing) return existing
+
+  const legacySessionId = legacySessionStorage?.getItem(USER_SESSION_STORAGE_KEY)
+  if (legacySessionId) {
+    storage?.setItem(USER_SESSION_STORAGE_KEY, legacySessionId)
+    return legacySessionId
+  }
 
   const created = createUserSessionId()
   storage?.setItem(USER_SESSION_STORAGE_KEY, created)

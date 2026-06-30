@@ -29,7 +29,7 @@ class UserPokemonDataRepository(InMemoryRepository):
     """Persist user-owned Pokémon/team data to a DynamoDB pk/sk table.
 
     Authentication is not wired yet. The frontend generates an anonymous session
-    id, stores it in sessionStorage, and sends it as `X-User-Session-Id`; this
+    id, stores it in localStorage, and sends it as `X-User-Session-Id`; this
     repository uses that id as the DynamoDB user partition suffix.
     """
 
